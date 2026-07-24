@@ -8,6 +8,7 @@ import { School } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
 import { DEPARTMENTS } from "@/lib/schoolData";
+import Loading from "@/components/Loading";
 
 export default function Auth() {
   const [mode, setMode]             = useState<"signin" | "signup">("signin");
@@ -47,7 +48,10 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen grid place-items-center px-4 auth-bg">
-      <Card className="w-full max-w-md p-6">
+      {busy ? (
+        <Loading />
+      ) : (
+        <Card className="w-full max-w-md p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-10 w-10 rounded-md bg-primary text-primary-foreground grid place-items-center">
             <School className="h-5 w-5" />
@@ -117,7 +121,8 @@ export default function Auth() {
           The first account created becomes Principal (full access). Every other
           account needs Principal approval before it can access the system.
         </p>
-      </Card>
-    </div>
-  );
-}
+          </Card>
+        )}
+      </div>
+    );
+  }
