@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+﻿import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -25,7 +25,16 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+const allowedOrigins = process.env.CORS_ORIGINS?.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins?.length ? allowedOrigins : true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,22 +1,23 @@
-openapi: 3.1.0
+﻿openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Academic Compass API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: sync
+security:
+  - bearerAuth: []
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
+      security: []
       responses:
         "200":
           description: Healthy
@@ -24,13 +25,105 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      security: []
+      responses:
+        "201":
+          description: Account created
+  /auth/signin:
+    post:
+      operationId: signIn
+      tags: [auth]
+      security: []
+      responses:
+        "200":
+          description: Signed in
+  /auth/me:
+    get:
+      operationId: getCurrentProfile
+      tags: [auth]
+      responses:
+        "200":
+          description: Current profile
+  /auth/roles:
+    get:
+      operationId: getCurrentRoles
+      tags: [auth]
+      responses:
+        "200":
+          description: Current roles
+  /mark-entries:
+    get:
+      operationId: listMarkEntries
+      tags: [sync]
+      responses:
+        "200":
+          description: Mark entries
+    post:
+      operationId: upsertMarkEntry
+      tags: [sync]
+      responses:
+        "200":
+          description: Sync result
+  /timetable-slots:
+    get:
+      operationId: listTimetableSlots
+      tags: [sync]
+      responses:
+        "200":
+          description: Timetable slots
+    post:
+      operationId: upsertTimetableSlot
+      tags: [sync]
+      responses:
+        "200":
+          description: Sync result
+  /timetable-slots/{id}:
+    delete:
+      operationId: deleteTimetableSlot
+      tags: [sync]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+  /conflicts:
+    get:
+      operationId: listConflicts
+      tags: [sync]
+      responses:
+        "200":
+          description: Conflicts
+  /conflicts/{id}:
+    patch:
+      operationId: resolveConflict
+      tags: [sync]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resolved
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]

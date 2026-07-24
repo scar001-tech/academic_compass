@@ -1,0 +1,530 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import type { DatabaseSync } from "node:sqlite";
+
+export type AppRole =
+  | "admin"
+  | "principal"
+  | "hod"
+  | "class_teacher"
+  | "subject_teacher"
+  | "teacher"
+  | "senior_teacher";
+
+export interface ProfileRow {
+  id: string;
+  email: string;
+  passwordHash: string;
+  fullName: string | null;
+  department: string | null;
+  approved: boolean;
+  createdAt: Date;
+}
+
+export interface MarkEntryRow {
+  id: string;
+  curriculumId: string;
+  sheetId: string;
+  studentId: string;
+  score: number | null;
+  updatedBy: string | null;
+  deviceName: string | null;
+  version: number;
+  updatedAt: Date;
+}
+
+export interface TimetableSlotRow {
+  id: string;
+  curriculumId: string;
+  classId: string;
+  streamId: string | null;
+  dayOfWeek: number;
+  period: number;
+  startTime: string | null;
+  endTime: string | null;
+  subjectId: string | null;
+  teacherId: string | null;
+  room: string | null;
+  version: number;
+  updatedBy: string | null;
+  deviceName: string | null;
+  updatedAt: Date;
+}
+
+export interface SyncConflictRow {
+  id: string;
+  entity: string;
+  entityId: string;
+  field: string;
+  serverValue: string | null;
+  incomingValue: string | null;
+  incomingBy: string | null;
+  incomingDevice: string | null;
+  status: string;
+  resolution: string | null;
+  customValue: string | null;
+  createdAt: Date;
+  resolvedAt: Date | null;
+}
+
+interface DataStore {
+  getProfileByEmail(email: string): Promise<ProfileRow | null>;
+  getProfileById(id: string): Promise<ProfileRow | null>;
+  hasAnyProfile(): Promise<boolean>;
+  createProfile(input: {
+    id: string;
+    email: string;
+    passwordHash: string;
+    fullName?: string | null;
+    department?: string | null;
+    approved: boolean;
+    roles?: AppRole[];
+  }): Promise<void>;
+  rolesForUser(userId: string): Promise<string[]>;
+  hasAnyRole(userId: string, roles: readonly string[]): Promise<boolean>;
+  listProfiles(): Promise<Array<ProfileRow & { roles: string[] }>>;
+  setApproval(userId: string, approved: boolean): Promise<void>;
+  assignRole(userId: string, role: AppRole, action: "add" | "remove"): Promise<void>;
+  listMarkEntries(): Promise<MarkEntryRow[]>;
+  upsertMarkEntry(input: {
+    id: string;
+    curriculumId: string;
+    sheetId: string;
+    studentId: string;
+    score: number | null;
+    version?: number;
+    userId: string;
+    deviceName?: string | null;
+  }): Promise<"ok" | "conflict">;
+  listTimetableSlots(): Promise<TimetableSlotRow[]>;
+  upsertTimetableSlot(input: {
+    id: string;
+    curriculumId: string;
+    classId: string;
+    streamId?: string | null;
+    dayOfWeek: number;
+    period: number;
+    startTime?: string | null;
+    endTime?: string | null;
+    subjectId?: string | null;
+    teacherId?: string | null;
+    room?: string | null;
+    version?: number;
+    userId: string;
+    deviceName?: string | null;
+  }): Promise<"ok" | "conflict">;
+  deleteTimetableSlot(id: string): Promise<void>;
+  listConflicts(status?: "pending" | "resolved"): Promise<SyncConflictRow[]>;
+  resolveConflict(id: string, resolution: "server" | "this" | "custom", customValue?: string | null): Promise<void>;
+}
+
+let storePromise: Promise<DataStore> | null = null;
+
+export function getStore() {
+  storePromise ??= createStore();
+  return storePromise;
+}
+
+async function createStore(): Promise<DataStore> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL environment variable is required.");
+  if (url.startsWith("sqlite:")) return createSqliteStore(url.slice("sqlite:".length));
+  return createPostgresStore();
+}
+
+async function createSqliteStore(rawPath: string): Promise<DataStore> {
+  const sqlite = await import("node:sqlite") as unknown as { DatabaseSync: typeof DatabaseSync };
+  const dbPath = path.resolve(process.cwd(), rawPath || "./data/academic-compass.sqlite");
+  mkdirSync(path.dirname(dbPath), { recursive: true });
+  const sqliteDb = new sqlite.DatabaseSync(dbPath);
+  sqliteDb.exec("PRAGMA journal_mode = WAL");
+  sqliteDb.exec("PRAGMA foreign_keys = ON");
+  sqliteDb.exec(`
+    CREATE TABLE IF NOT EXISTS ac_profiles (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      full_name TEXT,
+      department TEXT,
+      approved INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS ac_user_roles (
+      user_id TEXT NOT NULL REFERENCES ac_profiles(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      PRIMARY KEY (user_id, role)
+    );
+    CREATE TABLE IF NOT EXISTS ac_mark_entries (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      sheet_id TEXT NOT NULL,
+      student_id TEXT NOT NULL,
+      score REAL,
+      updated_by TEXT,
+      device_name TEXT,
+      version INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS ac_timetable_slots (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      class_id TEXT NOT NULL,
+      stream_id TEXT,
+      day_of_week INTEGER NOT NULL,
+      period INTEGER NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      subject_id TEXT,
+      teacher_id TEXT,
+      room TEXT,
+      version INTEGER NOT NULL DEFAULT 1,
+      updated_by TEXT,
+      device_name TEXT,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS ac_sync_conflicts (
+      id TEXT PRIMARY KEY,
+      entity TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      field TEXT NOT NULL,
+      server_value TEXT,
+      incoming_value TEXT,
+      incoming_by TEXT,
+      incoming_device TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      resolution TEXT,
+      custom_value TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      resolved_at TEXT
+    );
+  `);
+
+  const profileFromRow = (row: any): ProfileRow => ({
+    id: row.id,
+    email: row.email,
+    passwordHash: row.password_hash,
+    fullName: row.full_name,
+    department: row.department,
+    approved: Boolean(row.approved),
+    createdAt: new Date(row.created_at),
+  });
+  const markFromRow = (row: any): MarkEntryRow => ({
+    id: row.id,
+    curriculumId: row.curriculum_id,
+    sheetId: row.sheet_id,
+    studentId: row.student_id,
+    score: row.score,
+    updatedBy: row.updated_by,
+    deviceName: row.device_name,
+    version: row.version,
+    updatedAt: new Date(row.updated_at),
+  });
+  const slotFromRow = (row: any): TimetableSlotRow => ({
+    id: row.id,
+    curriculumId: row.curriculum_id,
+    classId: row.class_id,
+    streamId: row.stream_id,
+    dayOfWeek: row.day_of_week,
+    period: row.period,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    subjectId: row.subject_id,
+    teacherId: row.teacher_id,
+    room: row.room,
+    version: row.version,
+    updatedBy: row.updated_by,
+    deviceName: row.device_name,
+    updatedAt: new Date(row.updated_at),
+  });
+  const conflictFromRow = (row: any): SyncConflictRow => ({
+    id: row.id,
+    entity: row.entity,
+    entityId: row.entity_id,
+    field: row.field,
+    serverValue: row.server_value,
+    incomingValue: row.incoming_value,
+    incomingBy: row.incoming_by,
+    incomingDevice: row.incoming_device,
+    status: row.status,
+    resolution: row.resolution,
+    customValue: row.custom_value,
+    createdAt: new Date(row.created_at),
+    resolvedAt: row.resolved_at ? new Date(row.resolved_at) : null,
+  });
+
+  return {
+    async getProfileByEmail(email) {
+      const row = sqliteDb.prepare("SELECT * FROM ac_profiles WHERE email = ? LIMIT 1").get(email);
+      return row ? profileFromRow(row) : null;
+    },
+    async getProfileById(id) {
+      const row = sqliteDb.prepare("SELECT * FROM ac_profiles WHERE id = ? LIMIT 1").get(id);
+      return row ? profileFromRow(row) : null;
+    },
+    async hasAnyProfile() {
+      return Boolean(sqliteDb.prepare("SELECT id FROM ac_profiles LIMIT 1").get());
+    },
+    async createProfile(input) {
+      const tx = sqliteDb.prepare(`INSERT INTO ac_profiles (id, email, password_hash, full_name, department, approved, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`);
+      tx.run(input.id, input.email, input.passwordHash, input.fullName ?? null, input.department ?? null, input.approved ? 1 : 0, new Date().toISOString());
+      const roleInsert = sqliteDb.prepare("INSERT OR IGNORE INTO ac_user_roles (user_id, role) VALUES (?, ?)");
+      for (const role of input.roles ?? []) roleInsert.run(input.id, role);
+    },
+    async rolesForUser(userId) {
+      return sqliteDb.prepare("SELECT role FROM ac_user_roles WHERE user_id = ?").all(userId).map((row: any) => row.role);
+    },
+    async hasAnyRole(userId, roles) {
+      const assigned = sqliteDb.prepare("SELECT role FROM ac_user_roles WHERE user_id = ?").all(userId).map((row: any) => row.role as string);
+      return assigned.some((role: string) => roles.includes(role));
+    },
+    async listProfiles() {
+      const profiles = sqliteDb.prepare("SELECT * FROM ac_profiles ORDER BY created_at ASC").all().map(profileFromRow);
+      const roles = sqliteDb.prepare("SELECT user_id, role FROM ac_user_roles").all();
+      return profiles.map((profile) => ({
+        ...profile,
+        roles: roles.filter((role: any) => role.user_id === profile.id).map((role: any) => role.role),
+      }));
+    },
+    async setApproval(userId, approved) {
+      sqliteDb.prepare("UPDATE ac_profiles SET approved = ? WHERE id = ?").run(approved ? 1 : 0, userId);
+    },
+    async assignRole(userId, role, action) {
+      if (action === "add") sqliteDb.prepare("INSERT OR IGNORE INTO ac_user_roles (user_id, role) VALUES (?, ?)").run(userId, role);
+      else sqliteDb.prepare("DELETE FROM ac_user_roles WHERE user_id = ? AND role = ?").run(userId, role);
+    },
+    async listMarkEntries() {
+      return sqliteDb.prepare("SELECT * FROM ac_mark_entries").all().map(markFromRow);
+    },
+    async upsertMarkEntry(input) {
+      const existing = sqliteDb.prepare("SELECT * FROM ac_mark_entries WHERE id = ? LIMIT 1").get(input.id) as any;
+      if (!existing) {
+        sqliteDb.prepare(`INSERT INTO ac_mark_entries (id, curriculum_id, sheet_id, student_id, score, updated_by, device_name, version, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`)
+          .run(input.id, input.curriculumId, input.sheetId, input.studentId, input.score, input.userId, input.deviceName ?? null, new Date().toISOString());
+        return "ok";
+      }
+      if (existing.version > (input.version ?? 0)) {
+        sqliteDb.prepare(`INSERT OR IGNORE INTO ac_sync_conflicts
+          (id, entity, entity_id, field, server_value, incoming_value, incoming_by, incoming_device, status, created_at)
+          VALUES (?, 'mark', ?, 'score', ?, ?, ?, ?, 'pending', ?)`)
+          .run(randomUUID(), input.id, String(existing.score ?? ""), String(input.score ?? ""), input.userId, input.deviceName ?? null, new Date().toISOString());
+        return "conflict";
+      }
+      sqliteDb.prepare(`UPDATE ac_mark_entries SET score = ?, updated_by = ?, device_name = ?, version = ?, updated_at = ? WHERE id = ?`)
+        .run(input.score, input.userId, input.deviceName ?? null, existing.version + 1, new Date().toISOString(), input.id);
+      return "ok";
+    },
+    async listTimetableSlots() {
+      return sqliteDb.prepare("SELECT * FROM ac_timetable_slots").all().map(slotFromRow);
+    },
+    async upsertTimetableSlot(input) {
+      const existing = sqliteDb.prepare("SELECT * FROM ac_timetable_slots WHERE id = ? LIMIT 1").get(input.id) as any;
+      if (!existing) {
+        sqliteDb.prepare(`INSERT INTO ac_timetable_slots
+          (id, curriculum_id, class_id, stream_id, day_of_week, period, start_time, end_time, subject_id, teacher_id, room, version, updated_by, device_name, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`)
+          .run(input.id, input.curriculumId, input.classId, input.streamId ?? null, input.dayOfWeek, input.period, input.startTime ?? null, input.endTime ?? null, input.subjectId ?? null, input.teacherId ?? null, input.room ?? null, input.userId, input.deviceName ?? null, new Date().toISOString());
+        return "ok";
+      }
+      if (existing.version > (input.version ?? 0)) {
+        sqliteDb.prepare(`INSERT OR IGNORE INTO ac_sync_conflicts
+          (id, entity, entity_id, field, server_value, incoming_value, incoming_by, incoming_device, status, created_at)
+          VALUES (?, 'timetable', ?, 'slot', ?, ?, ?, ?, 'pending', ?)`)
+          .run(randomUUID(), input.id, `${existing.subject_id}@${existing.day_of_week}/${existing.period}`, `${input.subjectId}@${input.dayOfWeek}/${input.period}`, input.userId, input.deviceName ?? null, new Date().toISOString());
+        return "conflict";
+      }
+      sqliteDb.prepare(`UPDATE ac_timetable_slots SET curriculum_id = ?, class_id = ?, stream_id = ?, day_of_week = ?, period = ?, start_time = ?, end_time = ?, subject_id = ?, teacher_id = ?, room = ?, version = ?, updated_by = ?, device_name = ?, updated_at = ? WHERE id = ?`)
+        .run(input.curriculumId, input.classId, input.streamId ?? null, input.dayOfWeek, input.period, input.startTime ?? null, input.endTime ?? null, input.subjectId ?? null, input.teacherId ?? null, input.room ?? null, existing.version + 1, input.userId, input.deviceName ?? null, new Date().toISOString(), input.id);
+      return "ok";
+    },
+    async deleteTimetableSlot(id) {
+      sqliteDb.prepare("DELETE FROM ac_timetable_slots WHERE id = ?").run(id);
+    },
+    async listConflicts(status) {
+      const rows = status
+        ? sqliteDb.prepare("SELECT * FROM ac_sync_conflicts WHERE status = ?").all(status)
+        : sqliteDb.prepare("SELECT * FROM ac_sync_conflicts").all();
+      return rows.map(conflictFromRow);
+    },
+    async resolveConflict(id, resolution, customValue) {
+      sqliteDb.prepare("UPDATE ac_sync_conflicts SET status = 'resolved', resolution = ?, custom_value = ?, resolved_at = ? WHERE id = ?")
+        .run(resolution, customValue ?? null, new Date().toISOString(), id);
+    },
+  };
+}
+
+async function createPostgresStore(): Promise<DataStore> {
+  const [{ db, profiles, userRoles, markEntries, timetableSlots, syncConflicts }, { eq, and }] = await Promise.all([
+    import("@workspace/db"),
+    import("drizzle-orm"),
+  ]);
+
+  return {
+    async getProfileByEmail(email) {
+      const [profile] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
+      return profile ?? null;
+    },
+    async getProfileById(id) {
+      const [profile] = await db.select().from(profiles).where(eq(profiles.id, id)).limit(1);
+      return profile ?? null;
+    },
+    async hasAnyProfile() {
+      return (await db.select().from(profiles).limit(1)).length > 0;
+    },
+    async createProfile(input) {
+      await db.insert(profiles).values({
+        id: input.id,
+        email: input.email,
+        passwordHash: input.passwordHash,
+        fullName: input.fullName ?? null,
+        department: input.department ?? null,
+        approved: input.approved,
+      });
+      if (input.roles?.length) {
+        await db.insert(userRoles).values(input.roles.map((role) => ({ userId: input.id, role })));
+      }
+    },
+    async rolesForUser(userId) {
+      const rows = await db.select().from(userRoles).where(eq(userRoles.userId, userId));
+      return rows.map((row) => row.role);
+    },
+    async hasAnyRole(userId, roles) {
+      const assigned = await db.select().from(userRoles).where(eq(userRoles.userId, userId));
+      return assigned.some((row) => roles.includes(row.role));
+    },
+    async listProfiles() {
+      const allProfiles = await db.select().from(profiles);
+      const allRoles = await db.select().from(userRoles);
+      return allProfiles.map((profile) => ({
+        ...profile,
+        roles: allRoles.filter((role) => role.userId === profile.id).map((role) => role.role),
+      }));
+    },
+    async setApproval(userId, approved) {
+      await db.update(profiles).set({ approved }).where(eq(profiles.id, userId));
+    },
+    async assignRole(userId, role, action) {
+      if (action === "add") await db.insert(userRoles).values({ userId, role }).onConflictDoNothing();
+      else await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.role, role)));
+    },
+    async listMarkEntries() {
+      return db.select().from(markEntries);
+    },
+    async upsertMarkEntry(input) {
+      const [existing] = await db.select().from(markEntries).where(eq(markEntries.id, input.id)).limit(1);
+      if (!existing) {
+        await db.insert(markEntries).values({
+          id: input.id,
+          curriculumId: input.curriculumId,
+          sheetId: input.sheetId,
+          studentId: input.studentId,
+          score: input.score,
+          updatedBy: input.userId,
+          deviceName: input.deviceName ?? null,
+          version: 1,
+          updatedAt: new Date(),
+        });
+        return "ok";
+      }
+      if (existing.version > (input.version ?? 0)) {
+        await db.insert(syncConflicts).values({
+          id: randomUUID(),
+          entity: "mark",
+          entityId: input.id,
+          field: "score",
+          serverValue: String(existing.score ?? ""),
+          incomingValue: String(input.score ?? ""),
+          incomingBy: input.userId,
+          incomingDevice: input.deviceName ?? null,
+          status: "pending",
+          createdAt: new Date(),
+        }).onConflictDoNothing();
+        return "conflict";
+      }
+      await db.update(markEntries).set({
+        score: input.score,
+        updatedBy: input.userId,
+        deviceName: input.deviceName ?? null,
+        version: existing.version + 1,
+        updatedAt: new Date(),
+      }).where(eq(markEntries.id, input.id));
+      return "ok";
+    },
+    async listTimetableSlots() {
+      return db.select().from(timetableSlots);
+    },
+    async upsertTimetableSlot(input) {
+      const [existing] = await db.select().from(timetableSlots).where(eq(timetableSlots.id, input.id)).limit(1);
+      if (!existing) {
+        await db.insert(timetableSlots).values({
+          id: input.id,
+          curriculumId: input.curriculumId,
+          classId: input.classId,
+          streamId: input.streamId ?? null,
+          dayOfWeek: input.dayOfWeek,
+          period: input.period,
+          startTime: input.startTime ?? null,
+          endTime: input.endTime ?? null,
+          subjectId: input.subjectId ?? null,
+          teacherId: input.teacherId ?? null,
+          room: input.room ?? null,
+          version: 1,
+          updatedBy: input.userId,
+          deviceName: input.deviceName ?? null,
+          updatedAt: new Date(),
+        });
+        return "ok";
+      }
+      if (existing.version > (input.version ?? 0)) {
+        await db.insert(syncConflicts).values({
+          id: randomUUID(),
+          entity: "timetable",
+          entityId: input.id,
+          field: "slot",
+          serverValue: `${existing.subjectId}@${existing.dayOfWeek}/${existing.period}`,
+          incomingValue: `${input.subjectId}@${input.dayOfWeek}/${input.period}`,
+          incomingBy: input.userId,
+          incomingDevice: input.deviceName ?? null,
+          status: "pending",
+          createdAt: new Date(),
+        }).onConflictDoNothing();
+        return "conflict";
+      }
+      await db.update(timetableSlots).set({
+        curriculumId: input.curriculumId,
+        classId: input.classId,
+        streamId: input.streamId ?? null,
+        dayOfWeek: input.dayOfWeek,
+        period: input.period,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        subjectId: input.subjectId ?? null,
+        teacherId: input.teacherId ?? null,
+        room: input.room ?? null,
+        version: existing.version + 1,
+        updatedBy: input.userId,
+        deviceName: input.deviceName ?? null,
+        updatedAt: new Date(),
+      }).where(eq(timetableSlots.id, input.id));
+      return "ok";
+    },
+    async deleteTimetableSlot(id) {
+      await db.delete(timetableSlots).where(eq(timetableSlots.id, id));
+    },
+    async listConflicts(status) {
+      return status
+        ? db.select().from(syncConflicts).where(eq(syncConflicts.status, status))
+        : db.select().from(syncConflicts);
+    },
+    async resolveConflict(id, resolution, customValue) {
+      await db.update(syncConflicts).set({
+        status: "resolved",
+        resolution,
+        customValue: customValue ?? null,
+        resolvedAt: new Date(),
+      }).where(eq(syncConflicts.id, id));
+    },
+  };
+}
