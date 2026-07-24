@@ -37,7 +37,7 @@ export default function Transcripts() {
     <div>
       <PageHeader title="Student Transcripts" description="Visual profile: subject performance, deviations, trends, weak areas." />
 
-      <Card className="p-3 mb-4 flex flex-wrap gap-2 items-center">
+      <Card className="p-3 md:p-4 mb-4 flex flex-wrap gap-2 items-center">
         <Select value={studentId} onValueChange={setStudentId}>
           <SelectTrigger className="w-64"><SelectValue placeholder="Student"/></SelectTrigger>
           <SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name} — {s.admissionNo}</SelectItem>)}</SelectContent>

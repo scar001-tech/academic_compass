@@ -73,7 +73,7 @@ function ConflictCard({ c, onResolve }: { c: SyncConflict; onResolve: (id: strin
   const str     = student     ? state.streams.find(st => st.id === student.streamId) : null;
 
   return (
-    <Card className="p-4">
+    <Card className="p-3 md:p-4">
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <GitMerge className="h-4 w-4 text-destructive"/>
         <span className="font-medium capitalize">{c.entity} conflict · {c.field}</span>

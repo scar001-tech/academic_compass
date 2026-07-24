@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSchool } from "@/store/school";
+import { useAuth } from "@/store/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { gradeFor } from "@/lib/schoolData";
-import { AlertTriangle, Cloud, CloudOff, Save } from "lucide-react";
+import { AlertTriangle, Cloud, CloudOff, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MarkEntry() {
   const { state, activeCurriculum, update, setMarkScore, syncNow } = useSchool();
+  const { isTeacher, isSeniorTeacher, isPrincipal } = useAuth();
   const [params, setParams] = useSearchParams();
+
+  const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
+
+  if (!canEnterMarks) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background px-4">
+        <Card className="w-full max-w-md p-6 text-center space-y-4">
+          <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
+          <h1 className="text-lg font-bold">Access Restricted</h1>
+          <p className="text-sm text-muted-foreground">
+            Only teachers and above can enter marks. Please contact the Principal for access.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const preSheet = params.get("sheet");
   const preSheetObj = state.sheets.find(s => s.id === preSheet);
@@ -75,7 +93,7 @@ export default function MarkEntry() {
         }
       />
 
-      <Card className="p-3 mb-4">
+      <Card className="p-3 md:p-4 mb-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <Select value={classId} onValueChange={(v) => { setClassId(v); setStreamId(""); }}>
             <SelectTrigger><SelectValue placeholder="Class / Grade"/></SelectTrigger>
@@ -104,7 +122,7 @@ export default function MarkEntry() {
       )}
 
       {sheet && (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden card-pad">
           <div className="p-3 border-b flex items-center justify-between flex-wrap gap-2">
             <div>
               <div className="font-medium text-sm">

@@ -21,11 +21,11 @@ export default function Students() {
     .filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.admissionNo.toLowerCase().includes(q.toLowerCase()));
 
   const addStudent = () => {
-    if (!canManageStudents) return toast.error("Only the Principal or Senior Teacher can add learners");
+    if (!canManageStudents) { toast.error("Only the Principal or Senior Teacher can add learners"); return; }
     const cls = classes[0];
-    if (!cls) return toast.error("Create a class first");
+    if (!cls) { toast.error("Create a class first"); return; }
     const stream = state.streams.find(s => s.classId === cls.id);
-    if (!stream) return toast.error("Create a stream first");
+    if (!stream) { toast.error("Create a stream first"); return; }
     update((s) => {
       const id = `stu_${Date.now()}`;
       s.students.push({
@@ -37,7 +37,7 @@ export default function Students() {
   };
 
   const removeStudent = (id: string) => {
-    if (!canManageStudents) return toast.error("Only the Principal or Senior Teacher can remove learners");
+    if (!canManageStudents) { toast.error("Only the Principal or Senior Teacher can remove learners"); return; }
     update(st => { st.students = st.students.filter(x => x.id !== id); });
   };
 
@@ -69,7 +69,7 @@ export default function Students() {
         <Badge variant="secondary" className="ml-auto self-center">{students.length} students</Badge>
       </div>
 
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead>
             <tr>

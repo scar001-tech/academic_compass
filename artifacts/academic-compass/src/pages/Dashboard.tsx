@@ -81,7 +81,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
+    <div className="dashboard-bg">
       <PageHeader
         title={`${curriculum.shortName} Dashboard`}
         description={curriculum.description + " · " + state.settings.academicYear}
@@ -93,21 +93,21 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-4 md:mb-6">
         {tiles.map((t) => (
           <div key={t.label} className="stat-tile">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{t.label}</span>
-              <t.icon className={`h-4 w-4 text-${t.tone}`} />
+              <span className="text-[10px] md:text-xs text-muted-foreground">{t.label}</span>
+              <t.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 text-${t.tone}`} />
             </div>
-            <div className="text-2xl font-semibold">{t.value}</div>
+            <div className="text-xl md:text-2xl font-semibold">{t.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="p-4 lg:col-span-2">
-          <div className="flex items-center justify-between mb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <Card className="p-3 md:p-4 lg:col-span-2">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
             <div>
               <div className="text-sm font-medium">Average performance by subject</div>
               <div className="text-xs text-muted-foreground">
@@ -116,12 +116,12 @@ export default function Dashboard() {
             </div>
             <Badge variant="secondary">{curriculum.shortName}</Badge>
           </div>
-          <div className="h-72">
+          <div className="h-56 md:h-72">
             <ResponsiveContainer>
               <BarChart data={subjectAvgData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="subject" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="subject" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
                 <Bar dataKey="avg" fill="hsl(var(--primary))" radius={[6,6,0,0]} />
               </BarChart>
@@ -129,15 +129,15 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-3 md:p-4">
           <div className="text-sm font-medium mb-1">Trend across exams</div>
-          <div className="text-xs text-muted-foreground mb-3">Overall mean score</div>
-          <div className="h-72">
+          <div className="text-xs text-muted-foreground mb-2 md:mb-3">Overall mean score</div>
+          <div className="h-56 md:h-72">
             <ResponsiveContainer>
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }} />
                 <Line type="monotone" dataKey="avg" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
@@ -146,9 +146,9 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <Card className="p-4">
-          <div className="text-sm font-medium mb-3">Recent mark sheets</div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
+        <Card className="p-3 md:p-4">
+          <div className="text-sm font-medium mb-2 md:mb-3">Recent mark sheets</div>
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>

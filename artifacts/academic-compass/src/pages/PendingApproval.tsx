@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth";
-import { Clock, LogOut, RefreshCw, School, ShieldCheck } from "lucide-react";
+import { Clock, LogOut, RefreshCw, School, ShieldCheck, Hammer } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PendingApproval() {
@@ -29,7 +29,7 @@ export default function PendingApproval() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background px-4">
+    <div className="min-h-screen grid place-items-center bg-background px-4 auth-bg">
       <Card className="w-full max-w-md p-6 text-center space-y-5">
         <div className="mx-auto h-14 w-14 rounded-full bg-warning-soft text-warning-foreground grid place-items-center">
           <Clock className="h-7 w-7" />
@@ -75,9 +75,9 @@ export default function PendingApproval() {
           </Button>
         </div>
 
-        <p className="text-[11px] text-muted-foreground flex items-center justify-center gap-1">
+        <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-1">
           <ShieldCheck className="h-3.5 w-3.5" /> This page refreshes automatically once approved.
-        </p>
+        </div>
       </Card>
     </div>
   );

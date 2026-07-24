@@ -19,7 +19,7 @@ export default function Exams() {
     <div>
       <PageHeader title="Exams" description="Set up exams and terms for this curriculum."
         actions={<Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add exam</Button>}/>
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead><tr><th>Name</th><th>Term</th><th>Year</th><th>Out of</th><th>Status</th><th></th></tr></thead>
           <tbody>

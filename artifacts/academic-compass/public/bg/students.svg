@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0f9ff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <!-- Student figures -->
+  <g opacity="0.06">
+    <circle cx="200" cy="250" r="20" fill="#0ea5e9"/>
+    <rect x="185" y="275" width="30" height="50" rx="4" fill="#0ea5e9"/>
+    <circle cx="280" cy="260" r="18" fill="#0ea5e9"/>
+    <rect x="267" y="282" width="26" height="45" rx="4" fill="#0ea5e9"/>
+    <circle cx="360" cy="245" r="22" fill="#0ea5e9"/>
+    <rect x="343" y="272" width="34" height="55" rx="4" fill="#0ea5e9"/>
+    <circle cx="450" cy="255" r="19" fill="#0ea5e9"/>
+    <rect x="436" y="278" width="28" height="48" rx="4" fill="#0ea5e9"/>
+    <circle cx="540" cy="250" r="21" fill="#0ea5e9"/>
+    <rect x="524" y="276" width="32" height="52" rx="4" fill="#0ea5e9"/>
+    <circle cx="620" cy="260" r="17" fill="#0ea5e9"/>
+    <rect x="608" y="281" width="24" height="42" rx="4" fill="#0ea5e9"/>
+  </g>
+  <!-- Backpacks -->
+  <rect x="220" y="320" width="20" height="25" rx="3" fill="#0284c7" opacity="0.04"/>
+  <rect x="380" y="325" width="18" height="22" rx="3" fill="#0284c7" opacity="0.04"/>
+  <rect x="560" y="322" width="19" height="24" rx="3" fill="#0284c7" opacity="0.04"/>
+</svg>

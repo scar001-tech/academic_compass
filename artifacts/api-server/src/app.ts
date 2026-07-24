@@ -6,6 +6,10 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", service: "Academic Compass API", docs: "/api/healthz" });
+});
+
 app.use(
   pinoHttp({
     logger,

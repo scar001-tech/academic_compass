@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <!-- Report card -->
+  <g opacity="0.05">
+    <rect x="220" y="120" width="360" height="360" rx="6" fill="#475569"/>
+    <!-- Header bar -->
+    <rect x="220" y="120" width="360" height="50" rx="6" fill="#334155"/>
+    <rect x="220" y="155" width="360" height="15" fill="#334155"/>
+    <!-- Content lines -->
+    <line x1="260" y1="200" x2="540" y2="200" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="240" x2="540" y2="240" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="280" x2="480" y2="280" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="320" x2="540" y2="320" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="360" x2="500" y2="360" stroke="#ffffff" stroke-width="2"/>
+    <!-- Graph bars -->
+    <rect x="300" y="400" width="20" height="60" rx="2" fill="#3b82f6"/>
+    <rect x="340" y="420" width="20" height="40" rx="2" fill="#10b981"/>
+    <rect x="380" y="380" width="20" height="80" rx="2" fill="#f59e0b"/>
+    <rect x="420" y="410" width="20" height="50" rx="2" fill="#ef4444"/>
+    <rect x="460" y="390" width="20" height="70" rx="2" fill="#8b5cf6"/>
+  </g>
+</svg>

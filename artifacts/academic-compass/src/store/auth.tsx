@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isPrincipal = hasRole("admin", "principal");
   const canEditTimetable = isPrincipal || hasRole("senior_teacher");
-  const isTeacher = hasRole("teacher");
+  const isTeacher = hasRole("teacher", "subject_teacher", "class_teacher");
   const isSeniorTeacher = hasRole("senior_teacher");
   const isApproved = isPrincipal || !!session?.user?.approved;
   const canManageStaff = isPrincipal;

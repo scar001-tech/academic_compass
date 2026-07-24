@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <!-- Gear / settings -->
+  <g opacity="0.05">
+    <circle cx="400" cy="280" r="80" fill="none" stroke="#475569" stroke-width="12"/>
+    <circle cx="400" cy="280" r="50" fill="none" stroke="#475569" stroke-width="4"/>
+    <!-- Gear teeth -->
+    <rect x="395" y="180" width="10" height="30" rx="2" fill="#475569"/>
+    <rect x="395" y="350" width="10" height="30" rx="2" fill="#475569"/>
+    <rect x="300" y="275" width="30" height="10" rx="2" fill="#475569"/>
+    <rect x="470" y="275" width="30" height="10" rx="2" fill="#475569"/>
+    <!-- Diagonal teeth -->
+    <rect x="328" y="208" width="10" height="30" rx="2" fill="#475569" transform="rotate(45 333 223)"/>
+    <rect x="462" y="208" width="10" height="30" rx="2" fill="#475569" transform="rotate(-45 467 223)"/>
+    <rect x="328" y="322" width="10" height="30" rx="2" fill="#475569" transform="rotate(-45 333 337)"/>
+    <rect x="462" y="322" width="10" height="30" rx="2" fill="#475569" transform="rotate(45 467 337)"/>
+  </g>
+</svg>

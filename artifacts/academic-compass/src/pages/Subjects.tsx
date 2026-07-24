@@ -17,7 +17,7 @@ export default function Subjects() {
     <div>
       <PageHeader title="Subjects" description="Manage subjects offered in this curriculum."
         actions={<Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add subject</Button>} />
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead><tr><th>Code</th><th>Subject</th><th>Teacher</th><th></th></tr></thead>
           <tbody>

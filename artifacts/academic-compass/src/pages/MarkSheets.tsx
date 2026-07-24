@@ -47,7 +47,7 @@ export default function MarkSheets() {
         <Badge variant="secondary" className="ml-auto self-center">{sheets.length} sheets</Badge>
       </div>
 
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead>
             <tr>

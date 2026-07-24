@@ -13,14 +13,14 @@ export default function Teachers() {
   const { isPrincipal } = useAuth();
 
   const add = () => {
-    if (!isPrincipal) return toast.error("Only the Principal can manage the staff directory");
+    if (!isPrincipal) { toast.error("Only the Principal can manage the staff directory"); return; }
     update(s => {
       s.teachers.push({ id: `t_${Date.now()}`, name: "New Teacher", email: "new@school.ac.ke", role: "subject_teacher", curriculumIds: [] });
     });
   };
 
   const remove = (id: string) => {
-    if (!isPrincipal) return toast.error("Only the Principal can manage the staff directory");
+    if (!isPrincipal) { toast.error("Only the Principal can manage the staff directory"); return; }
     update(s => { s.teachers = s.teachers.filter(x => x.id !== id); });
   };
 
@@ -32,7 +32,7 @@ export default function Teachers() {
         actions={isPrincipal
           ? <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add teacher</Button>
           : <Badge variant="outline"><Lock className="h-3 w-3 mr-1"/>Read only</Badge>} />
-      <Card className="overflow-x-auto">
+      <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Curricula</th>{isPrincipal && <th></th>}</tr></thead>
           <tbody>

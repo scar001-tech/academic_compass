@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <!-- Mark sheet / checklist -->
+  <g opacity="0.06">
+    <rect x="220" y="140" width="360" height="320" rx="4" fill="#16a34a"/>
+    <line x1="260" y1="200" x2="540" y2="200" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="240" x2="540" y2="240" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="280" x2="480" y2="280" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="320" x2="540" y2="320" stroke="#ffffff" stroke-width="2"/>
+    <line x1="260" y1="360" x2="500" y2="360" stroke="#ffffff" stroke-width="2"/>
+    <!-- Checkmarks -->
+    <polyline points="260,190 270,200 290,175" fill="none" stroke="#ffffff" stroke-width="3"/>
+    <polyline points="260,230 270,240 290,215" fill="none" stroke="#ffffff" stroke-width="3"/>
+    <polyline points="260,310 270,320 290,295" fill="none" stroke="#ffffff" stroke-width="3"/>
+  </g>
+</svg>

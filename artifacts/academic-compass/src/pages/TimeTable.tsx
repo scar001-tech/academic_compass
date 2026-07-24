@@ -44,7 +44,7 @@ export default function Timetable() {
 
   const save = () => {
     if (!editing) return;
-    if (!canEditTimetable) return toast.error("Only HOD or Principal can edit");
+    if (!canEditTimetable) { toast.error("Only Senior Teacher or Principal can edit"); return; }
     upsertTimetableSlot(editing);
     setOpen(false);
     toast.success("Slot saved (syncing)");
@@ -62,7 +62,7 @@ export default function Timetable() {
         title="Timetable"
         description={canEditTimetable
           ? "You can edit this timetable. Changes sync to all devices."
-          : "View-only. Only HOD or Principal can edit."}
+          : "View-only. Only Senior Teacher or Principal can edit."}
         actions={
           <Badge variant="outline" className={canEditTimetable ? "border-success text-success" : ""}>
             {canEditTimetable ? <><Pencil className="h-3 w-3 mr-1"/>Editor</> : <><Lock className="h-3 w-3 mr-1"/>Read only</>}

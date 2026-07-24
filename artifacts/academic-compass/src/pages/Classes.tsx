@@ -30,7 +30,7 @@ export default function Classes() {
           const streams = state.streams.filter(s => s.classId === c.id);
           const count = state.students.filter(s => s.classId === c.id).length;
           return (
-            <Card key={c.id} className="p-4">
+            <Card key={c.id} className="p-3 md:p-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <input className="inline-edit text-lg font-semibold" value={c.name}
                   onChange={(e) => update(s => { const x = s.classes.find(x => x.id === c.id); if (x) x.name = e.target.value; })}/>
@@ -43,7 +43,7 @@ export default function Classes() {
                     {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   <Button variant="ghost" size="icon" onClick={() => {
-                    if (count > 0) return toast.error("Class has students — reassign them first");
+                    if (count > 0) { toast.error("Class has students — reassign them first"); return; }
                     update(s => { s.classes = s.classes.filter(x => x.id !== c.id); s.streams = s.streams.filter(x => x.classId !== c.id); });
                   }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                 </div>
@@ -63,7 +63,7 @@ export default function Classes() {
             </Card>
           );
         })}
-        {classes.length === 0 && <Card className="p-8 text-center text-muted-foreground">No classes yet</Card>}
+        {classes.length === 0 && <Card className="p-6 md:p-8 text-center text-muted-foreground">No classes yet</Card>}
       </div>
     </div>
   );

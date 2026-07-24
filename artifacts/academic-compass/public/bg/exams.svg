@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <!-- Exam paper -->
+  <g opacity="0.06">
+    <rect x="250" y="120" width="300" height="400" rx="4" fill="#f59e0b"/>
+    <!-- Lines -->
+    <line x1="280" y1="180" x2="520" y2="180" stroke="#ffffff" stroke-width="2"/>
+    <line x1="280" y1="210" x2="520" y2="210" stroke="#ffffff" stroke-width="2"/>
+    <line x1="280" y1="240" x2="480" y2="240" stroke="#ffffff" stroke-width="2"/>
+    <line x1="280" y1="270" x2="520" y2="270" stroke="#ffffff" stroke-width="2"/>
+    <line x1="280" y1="300" x2="460" y2="300" stroke="#ffffff" stroke-width="2"/>
+    <!-- Checkbox -->
+    <rect x="280" y="340" width="20" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="2"/>
+    <rect x="320" y="340" width="20" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="2"/>
+    <rect x="360" y="340" width="20" height="20" rx="2" fill="none" stroke="#ffffff" stroke-width="2"/>
+    <!-- Pencil -->
+    <rect x="550" y="350" width="80" height="12" rx="2" fill="#fbbf24" transform="rotate(-15 590 356)"/>
+    <polygon points="550,350 540,356 550,362" fill="#f59e0b" transform="rotate(-15 590 356)"/>
+  </g>
+</svg>

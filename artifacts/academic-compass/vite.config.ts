@@ -13,7 +13,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 const basePath = process.env.BASE_PATH ?? '/';
-const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:5000';
+const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:8080';
 
 export default defineConfig({
   base: basePath,

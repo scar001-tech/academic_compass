@@ -30,7 +30,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" description="School information, remark templates, grading scale, and app data."/>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <Card className="p-4 space-y-3">
+        <Card className="p-3 md:p-4 space-y-3">
           <div className="text-sm font-medium">School</div>
           <div>
             <label className="text-xs text-muted-foreground">Name</label>
@@ -50,7 +50,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="p-4 space-y-3">
+        <Card className="p-3 md:p-4 space-y-3">
           <div className="text-sm font-medium">Remark templates</div>
           <div>
             <label className="text-xs text-muted-foreground">Default class teacher remark</label>
@@ -62,7 +62,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="p-4 lg:col-span-2">
+        <Card className="p-3 md:p-4 lg:col-span-2">
           <div className="text-sm font-medium mb-3">Grading scale — {curriculum.name}</div>
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -87,7 +87,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Card className="p-4 lg:col-span-2">
+        <Card className="p-3 md:p-4 lg:col-span-2">
           <div className="text-sm font-medium mb-2">Data</div>
           <p className="text-xs text-muted-foreground mb-3">
             All data is stored locally in this browser. Reset restores the sample dataset.

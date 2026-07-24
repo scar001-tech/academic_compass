@@ -46,7 +46,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background px-4">
+    <div className="min-h-screen grid place-items-center px-4 auth-bg">
       <Card className="w-full max-w-md p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="h-10 w-10 rounded-md bg-primary text-primary-foreground grid place-items-center">

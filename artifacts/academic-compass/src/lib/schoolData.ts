@@ -244,17 +244,19 @@ function seed(): AppState {
 
   // Classes
   const classes: SchoolClass[] = [
-    { id: "cls_cbc_g7", curriculumId: "cbc", name: "Grade 7" },
-    { id: "cls_cbc_g8", curriculumId: "cbc", name: "Grade 8" },
+    { id: "cls_cbc_g10", curriculumId: "cbc", name: "Grade 10" },
+    { id: "cls_cbc_g11", curriculumId: "cbc", name: "Grade 11" },
+    { id: "cls_cbc_g12", curriculumId: "cbc", name: "Grade 12" },
     { id: "cls_844_f3", curriculumId: "844", name: "Form 3" },
     { id: "cls_844_f4", curriculumId: "844", name: "Form 4" },
   ];
 
   // Streams
   const streams: Stream[] = [
-    { id: "str_g7_blue", classId: "cls_cbc_g7", name: "Blue" },
-    { id: "str_g7_gold", classId: "cls_cbc_g7", name: "Gold" },
-    { id: "str_g8_blue", classId: "cls_cbc_g8", name: "Blue" },
+    { id: "str_g10_blue", classId: "cls_cbc_g10", name: "Blue" },
+    { id: "str_g10_gold", classId: "cls_cbc_g10", name: "Gold" },
+    { id: "str_g11_blue", classId: "cls_cbc_g11", name: "Blue" },
+    { id: "str_g12_blue", classId: "cls_cbc_g12", name: "Blue" },
     { id: "str_f3_east", classId: "cls_844_f3", name: "East" },
     { id: "str_f3_west", classId: "cls_844_f3", name: "West" },
     { id: "str_f4_east", classId: "cls_844_f4", name: "East" },
@@ -273,8 +275,9 @@ function seed(): AppState {
   // Update class teachers
   classes[0].classTeacherId = "t1";
   classes[1].classTeacherId = "t3";
-  classes[2].classTeacherId = "t4";
+  classes[2].classTeacherId = "t1";
   classes[3].classTeacherId = "t4";
+  classes[4].classTeacherId = "t4";
 
   // Subjects
   const cbcSubjects = [
@@ -303,7 +306,7 @@ function seed(): AppState {
   const cbcNames = [
     ["Amani","Wekesa","F"], ["Baraka","Mutiso","M"], ["Chebet","Kipkurui","F"],
     ["Dennis","Ochieng","M"], ["Esther","Njoki","F"], ["Faith","Akinyi","F"],
-    ["Gideon","Barasa","M"], ["Halima","Yusuf","F"],
+    ["Gideon","Barasa","M"], ["Halima","Yusuf","F"], ["Ian","Kipchoge","M"], ["Jacqueline","Mwende","F"],
   ] as const;
   const kcseNames = [
     ["Ibrahim","Hassan","M"], ["Jane","Wambui","F"], ["Kevin","Otieno","M"],
@@ -313,8 +316,8 @@ function seed(): AppState {
   let sIdx = 0;
   const students: Student[] = [];
   cbcNames.forEach((n, i) => {
-    const classId = i < 5 ? "cls_cbc_g7" : "cls_cbc_g8";
-    const streamId = i < 3 ? "str_g7_blue" : i < 5 ? "str_g7_gold" : "str_g8_blue";
+    const classId = i < 3 ? "cls_cbc_g10" : i < 6 ? "cls_cbc_g11" : "cls_cbc_g12";
+    const streamId = classId === "cls_cbc_g10" ? (i < 2 ? "str_g10_blue" : "str_g10_gold") : classId === "cls_cbc_g11" ? "str_g11_blue" : "str_g12_blue";
     students.push({
       id: uid("stu", sIdx++), curriculumId: "cbc", admissionNo: `CBC/${100 + i}/26`,
       name: `${n[0]} ${n[1]}`, gender: n[2] as "M"|"F",

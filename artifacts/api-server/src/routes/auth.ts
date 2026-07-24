@@ -128,6 +128,8 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+const DEV_BYPASS_APPROVAL = process.env.DEV_BYPASS_APPROVAL === "true" || process.env.NODE_ENV === "development";
+
 router.post("/signin", async (req, res) => {
   try {
     const parsed = signinSchema.safeParse(req.body);
@@ -139,6 +141,10 @@ router.post("/signin", async (req, res) => {
 
     const ok = await bcrypt.compare(password, profile.passwordHash);
     if (!ok) return res.status(401).json({ message: "Invalid email or password" });
+
+    if (!profile.approved && DEV_BYPASS_APPROVAL) {
+      await (await getStore()).setApproval(profile.id, true);
+    }
 
     const token = makeToken(profile.id);
     return res.json({

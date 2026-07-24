@@ -65,9 +65,9 @@ export default function Profile() {
     <div className="space-y-6">
       <PageHeader title="My Profile" description="View your profile details and role assignments." />
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4 md:gap-6">
         {/* User card */}
-        <Card className="p-6 flex flex-col items-center justify-center text-center space-y-4 md:col-span-1">
+        <Card className="p-4 md:p-6 flex flex-col items-center justify-center text-center space-y-4 md:col-span-1">
           <div className="h-24 w-24 rounded-full bg-primary/10 text-primary grid place-items-center mb-2">
             <UserIcon className="h-12 w-12" />
           </div>
@@ -102,14 +102,14 @@ export default function Profile() {
         </Card>
 
         {/* Roles card */}
-        <Card className="p-6 md:col-span-2 space-y-6">
+        <Card className="p-4 md:p-6 md:col-span-2 space-y-4 md:space-y-6">
           <div>
-            <h3 className="text-lg font-semibold">Authenticator Status</h3>
+            <h3 className="text-base md:text-lg font-semibold">Authenticator Status</h3>
             <p className="text-xs text-muted-foreground mt-1">
               Verify if the overall school authenticator has assigned your profile as a Teacher or a Senior Teacher.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
             <div className={`p-5 rounded-xl border flex flex-col justify-between space-y-4 ${isTeacher ? "bg-green-50/50 border-green-200 dark:bg-green-950/10 dark:border-green-900" : "bg-muted/50 border-border"}`}>
               <div className="flex justify-between items-start">
                 <div>
@@ -155,7 +155,7 @@ export default function Profile() {
 
       {/* Principal admin panel */}
       {isAuthenticator && (
-        <Card className="p-6 space-y-6">
+        <Card className="p-4 md:p-6 space-y-4 md:space-y-6">
           <div>
             <h3 className="text-lg font-bold flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary animate-pulse" />
@@ -165,33 +165,33 @@ export default function Profile() {
               As the Principal, you approve new sign-ups and assign or remove Teacher and Senior Teacher roles.
             </p>
           </div>
-          <div className="overflow-x-auto border border-border rounded-lg">
+          <div className="overflow-x-auto border border-border rounded-lg min-w-[640px]">
             <table className="w-full text-sm text-left">
               <thead className="bg-muted text-muted-foreground text-xs uppercase font-medium border-b border-border">
                 <tr>
-                  <th className="px-6 py-3">Full Name</th>
-                  <th className="px-6 py-3">Email</th>
-                  <th className="px-6 py-3">Department</th>
-                  <th className="px-6 py-3 text-center">Approved</th>
-                  <th className="px-6 py-3 text-center">Teacher</th>
-                  <th className="px-6 py-3 text-center">Senior Teacher</th>
+                  <th className="px-3 md:px-6 py-3">Full Name</th>
+                  <th className="px-3 md:px-6 py-3">Email</th>
+                  <th className="px-3 md:px-6 py-3">Department</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Approved</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Teacher</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Senior Teacher</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loadingProfiles ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
+                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
                 ) : profiles.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
+                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
                 ) : profiles.map((p) => {
                   const hasTeacher       = p.roles.includes("teacher");
                   const hasSeniorTeacher = p.roles.includes("senior_teacher");
                   const isPrincipalRow   = p.roles.includes("admin") || p.roles.includes("principal");
                   return (
                     <tr key={p.id} className="hover:bg-muted/30 transition">
-                      <td className="px-6 py-4 font-medium">{p.full_name || "Unnamed"}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{p.email}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{p.department || "—"}</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium">{p.full_name || "Unnamed"}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-muted-foreground">{p.email}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-muted-foreground">{p.department || "—"}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         {isPrincipalRow ? (
                           <span className="text-xs text-muted-foreground italic">Principal</span>
                         ) : (
@@ -203,13 +203,13 @@ export default function Profile() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
                           <span className={`text-xs ${hasTeacher ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasTeacher ? "Yes" : "No"}</span>
                           <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} />
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
                           <span className={`text-xs ${hasSeniorTeacher ? "text-purple-600 font-semibold" : "text-muted-foreground"}`}>{hasSeniorTeacher ? "Yes" : "No"}</span>
                           <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} />

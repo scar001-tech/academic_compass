@@ -92,7 +92,7 @@
   --foreground: 222.2 84% 4.9%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  --ring: 142.1 70% 40%;
 
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -102,9 +102,9 @@
   --popover-foreground: 222.2 84% 4.9%;
   --popover-border: 214.3 31.8% 91.4%;
 
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --primary-soft: 221.2 83.2% 93%;
+  --primary: 142.1 55% 35%;
+  --primary-foreground: 0 0% 100%;
+  --primary-soft: 142.1 55% 92%;
 
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -112,9 +112,9 @@
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --accent-soft: 210 40% 93%;
+  --accent: 142.1 40% 93%;
+  --accent-foreground: 142.1 55% 12%;
+  --accent-soft: 142.1 40% 90%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
@@ -131,8 +131,8 @@
   --info-foreground: 0 0% 100%;
   --info-soft: 199 89% 92%;
 
-  --chart-1: 221.2 83.2% 53.3%;
-  --chart-2: 142.1 76.2% 36.3%;
+  --chart-1: 142.1 55% 35%;
+  --chart-2: 142.1 50% 32%;
   --chart-3: 37.7 92.1% 50.2%;
   --chart-4: 199 89% 48%;
   --chart-5: 0 84.2% 60.2%;
@@ -140,14 +140,14 @@
   --sidebar: 0 0% 98%;
   --sidebar-foreground: 240 5.3% 26.1%;
   --sidebar-border: 220 13% 91%;
-  --sidebar-primary: 221.2 83.2% 53.3%;
+  --sidebar-primary: 142.1 55% 35%;
   --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-ring: 221.2 83.2% 53.3%;
+  --sidebar-accent: 142.1 35% 94%;
+  --sidebar-accent-foreground: 142.1 55% 12%;
+  --sidebar-ring: 142.1 55% 35%;
 
-  --curriculum-a: 221.2 83.2% 53.3%;
-  --curriculum-b: 142.1 76.2% 36.3%;
+  --curriculum-a: 142.1 55% 35%;
+  --curriculum-b: 142.1 50% 32%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
@@ -183,7 +183,7 @@
   --foreground: 210 40% 98%;
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --ring: 142.1 55% 45%;
 
   --card: 222.2 84% 4.9%;
   --card-foreground: 210 40% 98%;
@@ -193,9 +193,9 @@
   --popover-foreground: 210 40% 98%;
   --popover-border: 217.2 32.6% 17.5%;
 
-  --primary: 217.2 91.2% 59.8%;
+  --primary: 142.1 55% 45%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  --primary-soft: 217.2 91.2% 18%;
+  --primary-soft: 142.1 55% 15%;
 
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 40% 98%;
@@ -203,9 +203,9 @@
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
 
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 142.1 50% 14%;
   --accent-foreground: 210 40% 98%;
-  --accent-soft: 217.2 32.6% 22%;
+  --accent-soft: 142.1 50% 20%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
@@ -222,8 +222,8 @@
   --info-foreground: 0 0% 100%;
   --info-soft: 199 80% 15%;
 
-  --chart-1: 217.2 91.2% 59.8%;
-  --chart-2: 142.1 70% 45%;
+  --chart-1: 142.1 55% 45%;
+  --chart-2: 142.1 50% 38%;
   --chart-3: 37.7 85% 55%;
   --chart-4: 199 80% 55%;
   --chart-5: 0 62.8% 50%;
@@ -231,14 +231,14 @@
   --sidebar: 222.2 84% 4.9%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-border: 217.2 32.6% 17.5%;
-  --sidebar-primary: 217.2 91.2% 59.8%;
+  --sidebar-primary: 142.1 55% 45%;
   --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-  --sidebar-accent: 217.2 32.6% 17.5%;
+  --sidebar-accent: 142.1 50% 14%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 224.3 76.3% 48%;
+  --sidebar-ring: 142.1 55% 45%;
 
-  --curriculum-a: 217.2 91.2% 59.8%;
-  --curriculum-b: 142.1 70% 45%;
+  --curriculum-a: 142.1 55% 45%;
+  --curriculum-b: 142.1 50% 38%;
 }
 
 @layer base {
@@ -256,16 +256,20 @@
   }
 
   .data-table {
-    @apply w-full text-sm;
+    @apply w-full text-sm min-w-[640px];
   }
   .data-table th {
-    @apply text-left text-xs font-medium text-muted-foreground pb-2 pr-3;
+    @apply text-left text-xs font-medium text-muted-foreground pb-2 pr-3 whitespace-nowrap;
   }
   .data-table td {
-    @apply py-1.5 pr-3 align-middle;
+    @apply py-1.5 pr-3 align-middle whitespace-nowrap;
   }
   .data-table tr:not(:last-child) td {
     @apply border-b;
+  }
+
+  .card-pad {
+    @apply p-3 md:p-4;
   }
 
   .chip {
@@ -283,6 +287,116 @@
 
   .a4-sheet {
     @apply mx-auto bg-card border rounded-lg shadow-sm p-8 max-w-[820px] space-y-1;
+  }
+
+  .auth-bg {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(var(--success)) 100%);
+  }
+
+  .dashboard-bg {
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  }
+
+  .page-bg-default {
+    background: hsl(var(--background));
+  }
+
+  .page-bg-dashboard {
+    background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.88) 100%),
+                url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-students {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(224,242,254,0.88) 100%),
+                url('https://images.unsplash.com/photo-1523050854058-8df90110d37f?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-classes {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(220,252,231,0.88) 100%),
+                url('https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-subjects {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(224,231,255,0.88) 100%),
+                url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-teachers {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(207,250,254,0.88) 100%),
+                url('https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-exams {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(254,243,199,0.88) 100%),
+                url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-sheets {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.88) 100%),
+                url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-entry {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(220,252,231,0.88) 100%),
+                url('https://images.unsplash.com/photo-1455390582262-344c785e3f86?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-timetable {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(224,231,255,0.88) 100%),
+                url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-conflicts {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(254,226,226,0.88) 100%),
+                url('https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-transcripts {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(207,250,254,0.88) 100%),
+                url('https://images.unsplash.com/photo-1523240794352-6b6a0c6b8b4b?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-reports {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(248,250,252,0.88) 100%),
+                url('https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-settings {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.88) 100%),
+                url('https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .page-bg-profile {
+    background: linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(224,231,255,0.88) 100%),
+                url('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=1200&q=80');
+    background-size: cover;
+    background-position: center;
   }
 
   @keyframes fade-in {

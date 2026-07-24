@@ -13,7 +13,8 @@ import { Printer, ChevronLeft, ChevronRight, School } from "lucide-react";
 
 export default function Reports() {
   const { state, activeCurriculum, update } = useSchool();
-  const { isPrincipal, canManageStudents } = useAuth();
+  const { isPrincipal, canManageStudents, isTeacher, isSeniorTeacher } = useAuth();
+  const canComment = isPrincipal || isSeniorTeacher || isTeacher;
   const [params] = useSearchParams();
 
   const exams   = state.exams.filter(e => e.curriculumId === activeCurriculum && e.status !== "draft")
@@ -58,6 +59,26 @@ export default function Reports() {
     if (next) setStudentId(next.id);
   };
 
+  const updateClassRemark = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!student || !exam) return;
+    update(s => {
+      const idx = s.classRemarks.findIndex(r => r.studentId === student.id && r.examId === exam.id);
+      const entry = { studentId: student.id, examId: exam.id, remark: e.target.value, teacherName: classTeacher?.name || "", updatedAt: Date.now() };
+      if (idx >= 0) s.classRemarks[idx] = entry;
+      else s.classRemarks.push(entry);
+    });
+  };
+
+  const updatePrincipalRemark = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!student || !exam) return;
+    update(s => {
+      const idx = s.principalRemarks.findIndex(r => r.studentId === student.id && r.examId === exam.id);
+      const entry = { studentId: student.id, examId: exam.id, remark: e.target.value, principalName: "Dr. Joseph Mwangi", updatedAt: Date.now() };
+      if (idx >= 0) s.principalRemarks[idx] = entry;
+      else s.principalRemarks.push(entry);
+    });
+  };
+
   return (
     <div>
       <PageHeader
@@ -72,7 +93,7 @@ export default function Reports() {
         }
       />
 
-      <Card className="p-3 mb-4 no-print">
+      <Card className="p-3 md:p-4 mb-4 no-print">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <Select value={examId} onValueChange={setExamId}>
             <SelectTrigger><SelectValue placeholder="Exam"/></SelectTrigger>
@@ -156,9 +177,9 @@ export default function Reports() {
           </section>
 
           {/* Subject results */}
-          <section className="py-4 border-b">
+          <section className="py-4 border-b overflow-x-auto">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Subject results</div>
-            <table className="w-full text-xs border">
+            <table className="w-full text-xs border min-w-[640px]">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="text-left p-2 border">Subject</th>
@@ -182,6 +203,7 @@ export default function Reports() {
                     <td className="p-2 border">{r.rank || "—"}/{r.total}</td>
                     <td className="p-2 border">
                       <input className="inline-edit w-full text-xs" defaultValue={r.teacherComment}
+                        disabled={!canComment}
                         onBlur={(e) => update(s => {
                           const sh = s.sheets.find(x => x.examId === exam.id && x.subjectId === r.subjectId && x.streamId === student.streamId);
                           if (sh) sh.teacherComment = e.target.value;
@@ -198,12 +220,8 @@ export default function Reports() {
           <section className="py-3 border-b">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Class teacher's remarks</div>
             <Textarea className="text-sm min-h-[60px]" defaultValue={classRemark?.remark || state.settings.classTeacherRemarkTemplate}
-              onBlur={(e) => update(s => {
-                const idx = s.classRemarks.findIndex(r => r.studentId === student.id && r.examId === exam.id);
-                const entry = { studentId: student.id, examId: exam.id, remark: e.target.value, teacherName: classTeacher?.name || "", updatedAt: Date.now() };
-                if (idx >= 0) s.classRemarks[idx] = entry;
-                else s.classRemarks.push(entry);
-              })}/>
+              disabled={!canComment}
+              onBlur={updateClassRemark}/>
             <div className="text-xs text-muted-foreground mt-1">Signed: {classTeacher?.name || "—"} · Date: {new Date().toLocaleDateString()}</div>
           </section>
 
@@ -212,12 +230,7 @@ export default function Reports() {
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Principal's remarks</div>
             <Textarea className="text-sm min-h-[60px]" defaultValue={principalRemark?.remark || state.settings.principalRemarkTemplate}
               disabled={!isPrincipal}
-              onBlur={(e) => update(s => {
-                const idx = s.principalRemarks.findIndex(r => r.studentId === student.id && r.examId === exam.id);
-                const entry = { studentId: student.id, examId: exam.id, remark: e.target.value, principalName: "Dr. Joseph Mwangi", updatedAt: Date.now() };
-                if (idx >= 0) s.principalRemarks[idx] = entry;
-                else s.principalRemarks.push(entry);
-              })}/>
+              onBlur={updatePrincipalRemark}/>
             <div className="text-xs text-muted-foreground mt-1">
               Signed: {state.teachers.find(t => t.role === "principal")?.name || "Principal"} · Date: {new Date().toLocaleDateString()}
             </div>

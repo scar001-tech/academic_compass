@@ -47,3 +47,16 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Data directories
+artifacts/api-server/data/
+*.sqlite
+*.db
+
+# Build outputs
+dist/
