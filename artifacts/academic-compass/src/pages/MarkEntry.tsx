@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSchool } from "@/store/school";
 import { useAuth } from "@/store/auth";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { gradeFor } from "@/lib/schoolData";
 import { AlertTriangle, Cloud, CloudOff, Save, Lock } from "lucide-react";
 import { toast } from "sonner";
+import type { MarkEntry } from "@/lib/schoolData";
 
 export default function MarkEntry() {
   const { state, activeCurriculum, update, setMarkScore, syncNow } = useSchool();
@@ -63,16 +64,93 @@ export default function MarkEntry() {
     }
   }, [preSheet]); // eslint-disable-line
 
+  const initializedRef = useRef("");
+  useEffect(() => {
+    const key = `${examId}::${streamId}::${students.length}`;
+    if (key === initializedRef.current || !examId || !streamId) return;
+    initializedRef.current = key;
+
+    const s = state;
+    const relevantSheets = s.sheets.filter(sh => sh.examId === examId && sh.streamId === streamId);
+    const missing: MarkEntry[] = [];
+    relevantSheets.forEach(sheet => {
+      s.students.filter(stu => stu.streamId === streamId).forEach(stu => {
+        const exists = s.entries.some(e => e.sheetId === sheet.id && e.studentId === stu.id);
+        if (!exists) {
+          missing.push({
+            id: `e_${sheet.id}_${stu.id}_${Math.random().toString(36).slice(2, 7)}`,
+            sheetId: sheet.id,
+            studentId: stu.id,
+            score: null,
+            updatedAt: Date.now(),
+            updatedBy: s.deviceName,
+            pending: true,
+          });
+        }
+      });
+    });
+    if (missing.length > 0) {
+      update(s => { s.entries.push(...missing); });
+    }
+  }, [examId, streamId, students.length, update]);
+
   const pendingCount = entries.filter(e => e.pending).length;
   const missingCount = entries.filter(e => e.score == null).length;
 
-  const changeScore = (entryId: string, raw: string) => {
-    if (raw === "") return setMarkScore(entryId, null);
+  const changeScore = (studentId: string, subjectId: string, raw: string) => {
+    const sheetForSubject = state.sheets.find(s => s.subjectId === subjectId && s.examId === examId && s.streamId === streamId);
+    if (!sheetForSubject) return;
+
+    if (raw === "") {
+      const existing = state.entries.find(e => e.sheetId === sheetForSubject.id && e.studentId === studentId);
+      if (existing) {
+        update(s => {
+          const e = s.entries.find(x => x.id === existing.id);
+          if (e) {
+            e.score = null;
+            e.updatedAt = Date.now();
+            e.updatedBy = s.deviceName;
+            e.pending = true;
+          }
+        });
+      }
+      return;
+    }
+
     const n = Number(raw);
-    if (isNaN(n)) return toast.error("Invalid number");
+    if (isNaN(n)) {
+      toast.error("Invalid number");
+      return;
+    }
     const outOf = state.exams.find(e => e.id === examId)?.outOf || 100;
-    if (n < 0 || n > outOf) return toast.error(`Score must be 0–${outOf}`);
-    setMarkScore(entryId, n);
+    if (n < 0 || n > outOf) {
+      toast.error(`Score must be 0–${outOf}`);
+      return;
+    }
+
+    update(s => {
+      let e = s.entries.find(x => x.sheetId === sheetForSubject.id && x.studentId === studentId);
+      if (!e) {
+        e = {
+          id: `e_${sheetForSubject.id}_${studentId}_${Date.now()}`,
+          sheetId: sheetForSubject.id,
+          studentId,
+          score: n,
+          updatedAt: Date.now(),
+          updatedBy: s.deviceName,
+          pending: true,
+        };
+        s.entries.push(e);
+      } else {
+        e.score = n;
+        e.updatedAt = Date.now();
+        e.updatedBy = s.deviceName;
+        e.pending = true;
+      }
+      if (!s.syncQueue.includes(e.id)) s.syncQueue.push(e.id);
+    });
+
+    if (state.online) syncNow();
   };
 
   return (
@@ -165,7 +243,7 @@ export default function MarkEntry() {
                           className="h-9 w-24"
                           disabled={sheet.locked}
                           defaultValue={e?.score ?? ""}
-                          onBlur={(ev) => e && changeScore(e.id, ev.target.value)}
+                          onBlur={(ev) => changeScore(stu.id, sheet.subjectId, ev.target.value)}
                           onKeyDown={(ev) => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); }}
                         />
                       </td>

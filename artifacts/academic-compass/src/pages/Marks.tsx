@@ -14,7 +14,7 @@ import * as XLSX from "xlsx";
 import type { MarkEntry } from "@/lib/schoolData";
 
 export default function Marks() {
-  const { state, activeCurriculum, update, setMarkScore, syncNow } = useSchool();
+  const { state, activeCurriculum, update, syncNow } = useSchool();
   const { isTeacher, isSeniorTeacher, isPrincipal } = useAuth();
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -64,7 +64,7 @@ export default function Marks() {
 
   const initializedRef = useRef("");
   useEffect(() => {
-    const key = `${examId}::${streamId}`;
+    const key = `${examId}::${streamId}::${students.length}`;
     if (key === initializedRef.current || !examId || !streamId) return;
     initializedRef.current = key;
 
@@ -90,7 +90,7 @@ export default function Marks() {
     if (missing.length > 0) {
       update(s => { s.entries.push(...missing); });
     }
-  }, [examId, streamId, update]);
+  }, [examId, streamId, students.length, update]);
 
   const matrix = useMemo(() => {
     const result: Record<string, Record<string, { entryId: string; score: number | null; grade: string }>> = {};
@@ -143,22 +143,53 @@ export default function Marks() {
   const changeScore = (studentId: string, subjectId: string, raw: string) => {
     const sheet = sheets.find(s => s.subjectId === subjectId);
     if (!sheet) return;
-    const entry = state.entries.find(e => e.sheetId === sheet.id && e.studentId === studentId);
-    if (!entry) {
-      toast.error("Mark entry not found. Please try again.");
-      return;
-    }
+
     if (raw === "") {
-      setMarkScore(entry.id, null);
+      const existing = state.entries.find(e => e.sheetId === sheet.id && e.studentId === studentId);
+      if (existing) {
+        update(s => {
+          const e = s.entries.find(x => x.id === existing.id);
+          if (e) {
+            e.score = null;
+            e.updatedAt = Date.now();
+            e.updatedBy = s.deviceName;
+            e.pending = true;
+          }
+        });
+      }
       return;
     }
+
     const n = Number(raw);
     const outOf = state.exams.find(e => e.id === examId)?.outOf || 100;
     if (isNaN(n) || n < 0 || n > outOf) {
       toast.error(`Score must be 0–${outOf}`);
       return;
     }
-    setMarkScore(entry.id, n);
+
+    update(s => {
+      let e = s.entries.find(x => x.sheetId === sheet.id && x.studentId === studentId);
+      if (!e) {
+        e = {
+          id: `e_${sheet.id}_${studentId}_${Date.now()}`,
+          sheetId: sheet.id,
+          studentId,
+          score: n,
+          updatedAt: Date.now(),
+          updatedBy: s.deviceName,
+          pending: true,
+        };
+        s.entries.push(e);
+      } else {
+        e.score = n;
+        e.updatedAt = Date.now();
+        e.updatedBy = s.deviceName;
+        e.pending = true;
+      }
+      if (!s.syncQueue.includes(e.id)) s.syncQueue.push(e.id);
+    });
+
+    if (state.online) syncNow();
   };
 
   const exportMarks = () => {
@@ -269,7 +300,7 @@ export default function Marks() {
                               disabled={!canEnterMarks}
                               defaultValue={cell?.score ?? ""}
                               onBlur={(ev) => {
-                                if (cell?.entryId) changeScore(stu.id, sub.id, ev.target.value);
+                                changeScore(stu.id, sub.id, ev.target.value);
                               }}
                               onKeyDown={(ev) => {
                                 if (ev.key === "Enter") (ev.target as HTMLInputElement).blur();
