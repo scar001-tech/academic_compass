@@ -10,6 +10,12 @@ import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { api } from "@/lib/api";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface BackendProfile {
   id: string;
@@ -36,6 +42,11 @@ export default function Teachers() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [backendProfiles, setBackendProfiles] = useState<BackendProfile[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [role, setRole] = useState<string>("subject_teacher");
 
   const fetchProfiles = async () => {
     if (!isPrincipal) return;
@@ -58,12 +69,14 @@ export default function Teachers() {
     if (!isPrincipal) { toast.error("Only the Principal can manage the staff directory"); return; }
     try {
       const res = await api.post<{ id: string; email: string; full_name: string | null; department: string | null; roles: string[]; temp_password: string }>("/auth/create-staff", {
-        email: `new.teacher.${Date.now()}@school.ac.ke`,
-        full_name: "New Teacher",
-        department: "",
-        role: "subject_teacher",
+        email: email || `new.teacher.${Date.now()}@school.ac.ke`,
+        full_name: name || "New Teacher",
+        department: department || undefined,
+        role: role as BackendProfile["roles"][number],
       });
       toast.success(`Staff created. Temporary password: ${res.temp_password}`);
+      setOpen(false);
+      setName(""); setEmail(""); setDepartment(""); setRole("subject_teacher");
       await fetchProfiles();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create staff member.";
@@ -180,7 +193,44 @@ export default function Teachers() {
                 <Upload className="h-4 w-4 mr-1"/>Import
               </Button>
               <input ref={fileRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={importTeachers} />
-              <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add staff</Button>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-1"/>Add staff</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Staff Member</DialogTitle>
+                    <DialogDescription>Create a new staff account. A temporary password will be generated.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-3 py-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="staff-name">Full Name</Label>
+                      <Input id="staff-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jane Muthoni" />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="staff-email">Email</Label>
+                      <Input id="staff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. jane@school.ac.ke" />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="staff-dept">Department</Label>
+                      <Input id="staff-dept" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Mathematics" />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="staff-role">Role</Label>
+                      <Select value={role} onValueChange={setRole}>
+                        <SelectTrigger id="staff-role"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                          {ALL_ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={add}>Create Staff</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           : <Badge variant="outline"><Lock className="h-3 w-3 mr-1"/>Read only</Badge>} />
 
