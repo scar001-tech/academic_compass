@@ -15,9 +15,7 @@ import Classes from "./pages/Classes";
 import Subjects from "./pages/Subjects";
 import Teachers from "./pages/Teachers";
 import Exams from "./pages/Exams";
-import MarkSheets from "./pages/MarkSheets";
 import MarkEntry from "./pages/MarkEntry";
-import Marks from "./pages/Marks";
 import Conflicts from "./pages/Conflicts";
 import Transcripts from "./pages/Transcripts";
 import Reports from "./pages/Reports";
@@ -47,9 +45,7 @@ const App = () => (
                   <Route path="/subjects" element={<Subjects />} />
                   <Route path="/teachers" element={<Teachers />} />
                   <Route path="/exams" element={<Exams />} />
-                  <Route path="/sheets" element={<MarkSheets />} />
                   <Route path="/entry" element={<MarkEntry />} />
-                  <Route path="/marks" element={<Marks />} />
                   <Route path="/timetable" element={<Timetable />} />
                   <Route path="/conflicts" element={<Conflicts />} />
                   <Route path="/transcripts" element={<Transcripts />} />

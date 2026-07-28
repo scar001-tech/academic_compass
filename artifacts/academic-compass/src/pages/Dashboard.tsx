@@ -8,7 +8,7 @@ import {
   LineChart, Line,
 } from "recharts";
 import {
-  Users, BookOpen, ClipboardList, FileSpreadsheet,
+  Users, BookOpen, ClipboardList,
   AlertTriangle, TrendingUp, GitMerge, CheckCircle2,
 } from "lucide-react";
 import { statsForStudentExam } from "@/lib/schoolData";
@@ -25,15 +25,12 @@ export default function Dashboard() {
   const exams     = state.exams.filter(e => e.curriculumId === activeCurriculum);
   const sheets    = state.sheets.filter(s => s.curriculumId === activeCurriculum);
 
-  // FIX: pending marks only counts entries that are genuinely pending sync
-  // (not entries that merely have no score yet — those are "missing", not "pending")
   const pendingEntries = state.entries.filter(e => {
     const sh = state.sheets.find(x => x.id === e.sheetId);
     return sh?.curriculumId === activeCurriculum && e.pending === true;
   });
   const pendingMarks = pendingEntries.length;
 
-  // FIX: find the sheet with the most pending entries so the "Open" button is contextual
   const sheetPendingCounts = new Map<string, number>();
   for (const e of pendingEntries) {
     sheetPendingCounts.set(e.sheetId, (sheetPendingCounts.get(e.sheetId) ?? 0) + 1);
@@ -42,8 +39,6 @@ export default function Dashboard() {
     .sort((a, b) => b[1] - a[1])[0]?.[0];
 
   const conflicts = state.conflicts.filter(c => c.status === "pending").length;
-  const published = sheets.filter(s => s.status === "published").length;
-
   const latestExam = exams.find(e => e.status !== "draft");
   const subjectAvgData = useMemo(() => {
     if (!latestExam) return [];
@@ -73,11 +68,9 @@ export default function Dashboard() {
     { label: "Students",        value: students.length, icon: Users,         tone: "info" },
     { label: "Subjects",        value: subjects.length, icon: BookOpen,       tone: "primary" },
     { label: "Exams",           value: exams.length,    icon: ClipboardList,  tone: "accent" },
-    { label: "Mark Sheets",     value: sheets.length,   icon: FileSpreadsheet,tone: "success" },
     { label: "Pending marks",   value: pendingMarks,    icon: AlertTriangle,  tone: "warning" },
     { label: "Weak areas",      value: weakAreas,       icon: TrendingUp,     tone: "destructive" },
     { label: "Conflicts",       value: conflicts,       icon: GitMerge,       tone: "destructive" },
-    { label: "Published sheets",value: published,       icon: CheckCircle2,   tone: "success" },
   ];
 
   return (
@@ -146,34 +139,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mt-3 md:mt-4">
-        <Card className="p-3 md:p-4">
-          <div className="text-sm font-medium mb-2 md:mb-3">Recent mark sheets</div>
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr><th>Subject</th><th>Class</th><th>Exam</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {sheets.slice(0, 6).map((sh) => {
-                  const sub = state.subjects.find(s => s.id === sh.subjectId);
-                  const cls = state.classes.find(c => c.id === sh.classId);
-                  const str = state.streams.find(s => s.id === sh.streamId);
-                  const ex  = state.exams.find(e => e.id === sh.examId);
-                  return (
-                    <tr key={sh.id}>
-                      <td>{sub?.name}</td>
-                      <td>{cls?.name} · {str?.name}</td>
-                      <td>{ex?.name}</td>
-                      <td><StatusBadge status={sh.status} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-3 md:gap-4 mt-3 md:mt-4">
         <Card className="p-4">
           <div className="text-sm font-medium mb-3">Attention needed</div>
           <ul className="space-y-2 text-sm">
@@ -194,7 +160,6 @@ export default function Dashboard() {
                   <AlertTriangle className="h-4 w-4 text-warning"/>
                   {pendingMarks} pending mark entr{pendingMarks > 1 ? "ies" : "y"} awaiting sync
                 </span>
-                {/* FIX: navigate directly to the sheet with most pending entries */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -225,14 +190,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    draft:     "bg-muted text-muted-foreground",
-    submitted: "bg-info-soft text-info",
-    approved:  "bg-warning-soft text-warning-foreground",
-    published: "bg-success-soft text-success",
-  };
-  return <span className={`chip ${map[status] || ""}`}>{status}</span>;
 }

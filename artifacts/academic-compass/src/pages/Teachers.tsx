@@ -47,13 +47,18 @@ export default function Teachers() {
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [role, setRole] = useState<string>("subject_teacher");
+  const [password, setPassword] = useState("");
+
+  const pendingProfiles = backendProfiles.filter(p => !p.approved);
 
   const fetchProfiles = async () => {
     if (!isPrincipal) return;
     setLoadingProfiles(true);
     try {
       const data = await api.get<BackendProfile[]>("/auth/profiles");
-      setBackendProfiles(Array.isArray(data) ? data : []);
+      const sorted = Array.isArray(data) ? data : [];
+      sorted.sort((a, b) => Number(a.approved) - Number(b.approved) || a.full_name?.localeCompare(b.full_name || "") || 0);
+      setBackendProfiles(sorted);
     } catch {
       toast.error("Failed to load staff profiles.");
     } finally {
@@ -73,10 +78,11 @@ export default function Teachers() {
         full_name: name || "New Teacher",
         department: department || undefined,
         role: role as BackendProfile["roles"][number],
+        password: password || undefined,
       });
-      toast.success(`Staff created. Temporary password: ${res.temp_password}`);
+      toast.success(`Staff created. Password: ${res.temp_password}`);
       setOpen(false);
-      setName(""); setEmail(""); setDepartment(""); setRole("subject_teacher");
+      setName(""); setEmail(""); setDepartment(""); setRole("subject_teacher"); setPassword("");
       await fetchProfiles();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to create staff member.";
@@ -200,7 +206,7 @@ export default function Teachers() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Add Staff Member</DialogTitle>
-                    <DialogDescription>Create a new staff account. A temporary password will be generated.</DialogDescription>
+                    <DialogDescription>Create a new staff account. Leave password blank to auto-generate one.</DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-3 py-2">
                     <div className="grid gap-1">
@@ -224,6 +230,10 @@ export default function Teachers() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="staff-password">Password (optional)</Label>
+                      <Input id="staff-password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to auto-generate" />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -233,6 +243,22 @@ export default function Teachers() {
               </Dialog>
             </div>
           : <Badge variant="outline"><Lock className="h-3 w-3 mr-1"/>Read only</Badge>} />
+
+      {isPrincipal && pendingProfiles.length > 0 && (
+        <Card className="p-4 md:p-6 mb-4 border-warning bg-warning-soft/30">
+          <div className="text-sm font-medium mb-1">Pending approvals</div>
+          <p className="text-xs text-muted-foreground mb-3">These accounts are awaiting Principal approval.</p>
+          <div className="flex flex-wrap gap-2">
+            {pendingProfiles.map(p => (
+              <div key={p.id} className="flex items-center gap-2 bg-background border rounded-md px-3 py-2 text-xs">
+                <span className="font-medium">{p.full_name || p.email}</span>
+                <span className="text-muted-foreground">{p.email}</span>
+                <Button size="sm" variant="outline" onClick={() => handleApprovalToggle(p.id, false)}>Approve</Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {isPrincipal && (
         <Card className="p-4 md:p-6 mb-4 space-y-4 md:space-y-6">

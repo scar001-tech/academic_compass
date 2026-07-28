@@ -195,7 +195,7 @@ export default function MarkEntry() {
       {!sheet && (classId || streamId || subjectId || examId) && (
         <Card className="p-6 text-center text-muted-foreground">
           <AlertTriangle className="h-6 w-6 mx-auto mb-2 text-warning"/>
-          No matching mark sheet. Pick a full combination that exists, or create the exam sheet from Exams/Sheets.
+          No matching mark sheet. Pick a full combination that exists, or create it from Exams.
         </Card>
       )}
 

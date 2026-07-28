@@ -50,6 +50,7 @@ const createStaffSchema = z.object({
   full_name: z.string().trim().min(1).max(120).optional(),
   department: z.string().trim().min(1).max(120).optional(),
   role: z.enum(APP_ROLES).optional().default("subject_teacher"),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
 });
 
 function generateTempPassword(length = 10) {
@@ -237,12 +238,12 @@ router.post("/create-staff", authenticateJWT, requireRoles("admin", "principal")
   try {
     const parsed = createStaffSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(validationError(parsed.error));
-    const { email, full_name, department, role } = parsed.data;
+    const { email, full_name, department, role, password } = parsed.data;
     const store = await getStore();
     const existing = await store.getProfileByEmail(email);
     if (existing) return res.status(409).json({ message: "Email already registered" });
-    const tempPassword = generateTempPassword();
-    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    const finalPassword = password || generateTempPassword();
+    const passwordHash = await bcrypt.hash(finalPassword, 12);
     const id = crypto.randomUUID();
     await store.createProfile({
       id,
@@ -260,7 +261,7 @@ router.post("/create-staff", authenticateJWT, requireRoles("admin", "principal")
       department: department || null,
       approved: true,
       roles: [role],
-      temp_password: tempPassword,
+      temp_password: finalPassword,
     });
   } catch (err) {
     console.error("[create-staff]", err);
