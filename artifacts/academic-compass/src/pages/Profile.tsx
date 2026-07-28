@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/store/auth";
+import { useSchool } from "@/store/school";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,12 @@ import {
 interface ProfileItem {
   id: string; email: string; full_name: string | null; department: string | null;
   approved: boolean; created_at: string; roles: string[];
+  isLocal?: boolean;
 }
 
 export default function Profile() {
   const { user, roles, isTeacher, isSeniorTeacher, isPrincipal, canManageStaff, refreshRoles } = useAuth();
+  const { state } = useSchool();
   const [profiles, setProfiles]           = useState<ProfileItem[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
   const isAuthenticator = canManageStaff;
@@ -27,12 +30,34 @@ export default function Profile() {
     setLoadingProfiles(true);
     try {
       const data = await api.get<ProfileItem[]>("/auth/profiles");
-      setProfiles(data);
-    } catch { toast.error("Failed to load user profiles."); }
-    finally { setLoadingProfiles(false); }
+      const backendProfiles: ProfileItem[] = Array.isArray(data) ? data : [];
+      const localTeachers: ProfileItem[] = state.teachers.map((t) => ({
+        id: t.id,
+        email: t.email,
+        full_name: t.name,
+        department: null,
+        approved: true,
+        created_at: new Date().toISOString(),
+        roles: [t.role],
+        isLocal: true,
+      }));
+      const merged = [...backendProfiles];
+      localTeachers.forEach((lt) => {
+        if (!merged.some((p) => p.email === lt.email || p.id === lt.id)) {
+          merged.push(lt);
+        }
+      });
+      setProfiles(merged);
+    } catch {
+      toast.error("Failed to load user profiles.");
+    } finally {
+      setLoadingProfiles(false);
+    }
   };
 
-  useEffect(() => { fetchProfiles(); }, [roles]); // eslint-disable-line
+  useEffect(() => {
+    fetchProfiles();
+  }, [roles, state.teachers.length]); // eslint-disable-line
 
   const handleApprovalToggle = async (userId: string, currentlyApproved: boolean) => {
     try {
@@ -186,6 +211,7 @@ export default function Profile() {
                   const hasTeacher       = p.roles.includes("teacher");
                   const hasSeniorTeacher = p.roles.includes("senior_teacher");
                   const isPrincipalRow   = p.roles.includes("admin") || p.roles.includes("principal");
+                  const isLocal = p.isLocal;
                   return (
                     <tr key={p.id} className="hover:bg-muted/30 transition">
                       <td className="px-3 md:px-6 py-3 md:py-4 font-medium">{p.full_name || "Unnamed"}</td>
@@ -194,6 +220,8 @@ export default function Profile() {
                       <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         {isPrincipalRow ? (
                           <span className="text-xs text-muted-foreground italic">Principal</span>
+                        ) : isLocal ? (
+                          <span className="text-xs text-muted-foreground italic">Local</span>
                         ) : (
                           <div className="flex justify-center items-center gap-2">
                             <span className={`text-xs ${p.approved ? "text-success font-semibold" : "text-warning-foreground"}`}>
@@ -206,13 +234,13 @@ export default function Profile() {
                       <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
                           <span className={`text-xs ${hasTeacher ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} />
+                          <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} disabled={isLocal} />
                         </div>
                       </td>
                       <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                         <div className="flex justify-center items-center gap-2">
                           <span className={`text-xs ${hasSeniorTeacher ? "text-purple-600 font-semibold" : "text-muted-foreground"}`}>{hasSeniorTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} />
+                          <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} disabled={isLocal} />
                         </div>
                       </td>
                     </tr>

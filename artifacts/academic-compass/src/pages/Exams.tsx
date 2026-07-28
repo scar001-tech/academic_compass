@@ -2,11 +2,14 @@ import { useSchool } from "@/store/school";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Download, Upload } from "lucide-react";
+import { useRef } from "react";
+import { toast } from "sonner";
 
 export default function Exams() {
   const { state, activeCurriculum, update } = useSchool();
   const exams = state.exams.filter(e => e.curriculumId === activeCurriculum);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const add = () => update(s => {
     s.exams.push({
@@ -15,10 +18,65 @@ export default function Exams() {
     });
   });
 
+  const exportExams = () => {
+    const data = JSON.stringify(exams, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `exams-${activeCurriculum}-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exams exported successfully");
+  };
+
+  const importExams = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target?.result as string);
+        if (!Array.isArray(imported)) throw new Error("Invalid format");
+        update(s => {
+          imported.forEach((ex: any) => {
+            if (!ex.id || !ex.name || !ex.term || !ex.year) return;
+            s.exams.push({
+              id: ex.id || `ex_${Date.now()}`,
+              curriculumId: activeCurriculum,
+              name: ex.name,
+              term: ex.term,
+              year: ex.year,
+              outOf: ex.outOf || 100,
+              status: ex.status || "draft",
+            });
+          });
+        });
+        toast.success(`Imported ${imported.length} exams`);
+      } catch {
+        toast.error("Failed to import exams. Invalid JSON format.");
+      } finally {
+        if (fileRef.current) fileRef.current.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div>
       <PageHeader title="Exams" description="Set up exams and terms for this curriculum."
-        actions={<Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add exam</Button>}/>
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportExams} disabled={exams.length === 0}>
+              <Download className="h-4 w-4 mr-1"/>Export
+            </Button>
+            <Button variant="outline" onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-1"/>Import
+            </Button>
+            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={importExams} />
+            <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add exam</Button>
+          </div>
+        }/>
       <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead><tr><th>Name</th><th>Term</th><th>Year</th><th>Out of</th><th>Status</th><th></th></tr></thead>
