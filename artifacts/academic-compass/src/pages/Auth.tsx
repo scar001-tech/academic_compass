@@ -26,15 +26,11 @@ export default function Auth() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "signup" && !department) {
-      toast.error("Please select your department");
-      return;
-    }
     setBusy(true);
     try {
       if (mode === "signup") {
-        await signUp(email, password, name || undefined, department);
-        toast.success("Account created. Await Principal approval to access the system.");
+        await signUp(email, password, name || undefined, department || undefined);
+        toast.success("Account created. You can now sign in.");
       } else {
         await signIn(email, password);
       }

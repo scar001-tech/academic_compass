@@ -23,6 +23,7 @@ const NAV = [
   { to: "/subjects",   label: "Subjects",         icon: BookOpen },
   { to: "/teachers",   label: "Teachers",         icon: UserSquare },
   { to: "/exams",      label: "Exams",            icon: ClipboardList },
+  { to: "/sheets",     label: "Mark Sheets",      icon: FileSpreadsheet },
   { to: "/entry",      label: "Mark Entry",       icon: PencilLine },
   { to: "/marks",      label: "Exam Marks",        icon: FileSpreadsheet },
   { to: "/timetable",  label: "Timetable",        icon: CalendarDays },
@@ -35,7 +36,9 @@ const NAV = [
 
 const FOOTER_LINKS = [
   { to: "/", label: "Home" },
+  { to: "/sheets", label: "Mark Sheets" },
   { to: "/entry", label: "Mark Entry" },
+  { to: "/marks", label: "Exam Marks" },
   { to: "/reports", label: "Reports" },
   { to: "/students", label: "Students" },
   { to: "/timetable", label: "Timetable" },
@@ -48,6 +51,7 @@ const PAGE_BG: Record<string, string> = {
   "/subjects": "page-bg-subjects",
   "/teachers": "page-bg-teachers",
   "/exams": "page-bg-exams",
+  "/sheets": "page-bg-sheets",
   "/entry": "page-bg-entry",
   "/marks": "page-bg-marks",
   "/timetable": "page-bg-timetable",
@@ -60,7 +64,9 @@ const PAGE_BG: Record<string, string> = {
 
 const KEY_QUICK_LINKS = [
   { to: "/", label: "Dashboard" },
+  { to: "/sheets", label: "Mark Sheets" },
   { to: "/entry", label: "Mark Entry" },
+  { to: "/marks", label: "Exam Marks" },
   { to: "/reports", label: "Reports" },
   { to: "/students", label: "Students" },
   { to: "/timetable", label: "Timetable" },
@@ -71,6 +77,8 @@ const MORE_LINKS = [
   { to: "/subjects", label: "Subjects", icon: BookOpen },
   { to: "/teachers", label: "Teachers", icon: UserSquare },
   { to: "/exams", label: "Exams", icon: ClipboardList },
+  { to: "/sheets", label: "Mark Sheets", icon: FileSpreadsheet },
+  { to: "/marks", label: "Exam Marks", icon: FileSpreadsheet },
   { to: "/conflicts", label: "Conflicts", icon: GitMerge },
   { to: "/transcripts", label: "Transcripts", icon: LineChart },
   { to: "/settings", label: "Settings", icon: Settings },

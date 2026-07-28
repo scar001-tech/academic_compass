@@ -159,6 +159,11 @@ router.post("/signin", async (req, res) => {
       await (await getStore()).setApproval(profile.id, true);
     }
 
+    const currentRoles = await (await getStore()).rolesForUser(profile.id);
+    if (currentRoles.length === 0 && DEV_BYPASS_APPROVAL) {
+      await (await getStore()).assignRole(profile.id, "teacher", "add");
+    }
+
     const token = makeToken(profile.id);
     return res.json({
       token,
