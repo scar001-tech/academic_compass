@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSchool } from "@/store/school";
 import { useAuth } from "@/store/auth";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,14 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Trash2, Lock } from "lucide-react";
+import { Search, Plus, Trash2, Lock, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 export default function Students() {
   const { state, activeCurriculum, update } = useSchool();
   const { canManageStudents } = useAuth();
   const [q, setQ] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const fileRef = useRef<HTMLInputElement>(null);
   const classes = state.classes.filter(c => c.curriculumId === activeCurriculum);
   const students = state.students.filter(s => s.curriculumId === activeCurriculum)
     .filter(s => classFilter === "all" || s.classId === classFilter)
@@ -39,6 +41,81 @@ export default function Students() {
   const removeStudent = (id: string) => {
     if (!canManageStudents) { toast.error("Only the Principal or Senior Teacher can remove learners"); return; }
     update(st => { st.students = st.students.filter(x => x.id !== id); });
+  };
+
+  const exportStudents = () => {
+    const data = students.map(s => {
+      const cls = state.classes.find(c => c.id === s.classId);
+      const stream = state.streams.find(st => st.id === s.streamId);
+      return {
+        AdmissionNo: s.admissionNo,
+        Name: s.name,
+        Gender: s.gender,
+        Class: cls?.name || "",
+        Stream: stream?.name || "",
+        VAP: s.vap || "",
+      };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, `students-${activeCurriculum}-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success("Students exported as Excel");
+  };
+
+  const importStudents = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<any>(sheet);
+        if (!Array.isArray(json) || json.length === 0) throw new Error("Invalid format");
+        update((s) => {
+          json.forEach((row) => {
+            const name = String(row.Name || row.StudentName || "New Student");
+            const admissionNo = String(row.AdmissionNo || row.Admission || `IMP/${Date.now()}/${s.settings.academicYear}`);
+            const gender = ["M", "F"].includes(String(row.Gender)) ? String(row.Gender) : "M";
+            const className = String(row.Class || "");
+            const streamName = String(row.Stream || "");
+            const vap = String(row.VAP || row.vap || "");
+            let classId = classFilter !== "all" ? classFilter : (classes[0]?.id || "");
+            let streamId = "";
+            if (className) {
+              const foundClass = s.classes.find(c => c.name.toLowerCase() === className.toLowerCase() && c.curriculumId === activeCurriculum);
+              if (foundClass) classId = foundClass.id;
+            }
+            if (streamName && classId) {
+              const foundStream = s.streams.find(st => st.classId === classId && st.name.toLowerCase() === streamName.toLowerCase());
+              if (foundStream) streamId = foundStream.id;
+            }
+            if (!streamId && classId) {
+              const fallback = s.streams.find(st => st.classId === classId);
+              if (fallback) streamId = fallback.id;
+            }
+            s.students.push({
+              id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              curriculumId: activeCurriculum,
+              admissionNo,
+              name,
+              gender: gender as "M" | "F",
+              classId,
+              streamId,
+              vap,
+            });
+          });
+        });
+        toast.success(`Imported ${json.length} students from Excel`);
+      } catch {
+        toast.error("Failed to import students. Please upload a valid Excel (.xlsx) file.");
+      } finally {
+        if (fileRef.current) fileRef.current.value = "";
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   return (

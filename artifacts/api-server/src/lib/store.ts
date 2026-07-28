@@ -86,6 +86,7 @@ interface DataStore {
   listProfiles(): Promise<Array<ProfileRow & { roles: string[] }>>;
   setApproval(userId: string, approved: boolean): Promise<void>;
   assignRole(userId: string, role: AppRole, action: "add" | "remove"): Promise<void>;
+  deleteProfile(userId: string): Promise<void>;
   listMarkEntries(): Promise<MarkEntryRow[]>;
   upsertMarkEntry(input: {
     id: string;
@@ -294,6 +295,10 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
       if (action === "add") sqliteDb.prepare("INSERT OR IGNORE INTO ac_user_roles (user_id, role) VALUES (?, ?)").run(userId, role);
       else sqliteDb.prepare("DELETE FROM ac_user_roles WHERE user_id = ? AND role = ?").run(userId, role);
     },
+    async deleteProfile(userId) {
+      sqliteDb.prepare("DELETE FROM ac_user_roles WHERE user_id = ?").run(userId);
+      sqliteDb.prepare("DELETE FROM ac_profiles WHERE id = ?").run(userId);
+    },
     async listMarkEntries() {
       return sqliteDb.prepare("SELECT * FROM ac_mark_entries").all().map(markFromRow);
     },
@@ -408,6 +413,9 @@ async function createPostgresStore(): Promise<DataStore> {
     async assignRole(userId, role, action) {
       if (action === "add") await db.insert(userRoles).values({ userId, role }).onConflictDoNothing();
       else await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.role, role)));
+    },
+    async deleteProfile(userId) {
+      await db.delete(profiles).where(eq(profiles.id, userId));
     },
     async listMarkEntries() {
       return db.select().from(markEntries);

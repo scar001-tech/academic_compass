@@ -45,6 +45,18 @@ const assignRoleSchema = z.object({
   action: z.enum(["add", "remove"]),
 });
 
+const createStaffSchema = z.object({
+  email: z.string().email().trim().toLowerCase(),
+  full_name: z.string().trim().min(1).max(120).optional(),
+  department: z.string().trim().min(1).max(120).optional(),
+  role: z.enum(APP_ROLES).optional().default("subject_teacher"),
+});
+
+function generateTempPassword(length = 10) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$";
+  return Array.from(crypto.getRandomValues(new Uint8Array(length))).map(b => chars[b % chars.length]).join("");
+}
+
 function makeToken(userId: string) {
   return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
@@ -217,6 +229,55 @@ router.post("/assign-role", authenticateJWT, requireRoles("admin", "principal"),
     return res.json({ ok: true });
   } catch (err) {
     console.error("[assign-role]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/create-staff", authenticateJWT, requireRoles("admin", "principal"), async (req: any, res) => {
+  try {
+    const parsed = createStaffSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const { email, full_name, department, role } = parsed.data;
+    const store = await getStore();
+    const existing = await store.getProfileByEmail(email);
+    if (existing) return res.status(409).json({ message: "Email already registered" });
+    const tempPassword = generateTempPassword();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    const id = crypto.randomUUID();
+    await store.createProfile({
+      id,
+      email,
+      passwordHash,
+      fullName: full_name || null,
+      department: department || null,
+      approved: true,
+      roles: [role],
+    });
+    return res.status(201).json({
+      id,
+      email,
+      full_name: full_name || null,
+      department: department || null,
+      approved: true,
+      roles: [role],
+      temp_password: tempPassword,
+    });
+  } catch (err) {
+    console.error("[create-staff]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.delete("/profiles/:id", authenticateJWT, requireRoles("admin", "principal"), async (req: any, res) => {
+  try {
+    const userId = req.params.id;
+    const store = await getStore();
+    const profile = await store.getProfileById(userId);
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    await store.deleteProfile(userId);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[delete-profile]", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
