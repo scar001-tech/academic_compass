@@ -531,6 +531,7 @@ export interface StudentSubjectStat {
   deviation: number; // vs stream mean
   teacherComment: string;
   teacherName: string;
+  entryId: ID;
 }
 
 export function statsForStudentExam(
@@ -561,6 +562,7 @@ export function statsForStudentExam(
       deviation: score != null ? Math.round((score - mean) * 10) / 10 : 0,
       teacherComment: sh.teacherComment || "",
       teacherName: teacher?.name ?? "",
+      entryId: mine?.id || "",
     });
   });
   const validRows = rows.filter(r => r.score != null);

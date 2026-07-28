@@ -12,9 +12,10 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGri
 import { Printer, ChevronLeft, ChevronRight, School } from "lucide-react";
 
 export default function Reports() {
-  const { state, activeCurriculum, update } = useSchool();
+  const { state, activeCurriculum, update, setMarkScore } = useSchool();
   const { isPrincipal, canManageStudents, isTeacher, isSeniorTeacher } = useAuth();
   const canComment = isPrincipal || isSeniorTeacher || isTeacher;
+  const canEditMarks = isPrincipal || isSeniorTeacher || isTeacher;
   const [params] = useSearchParams();
 
   const exams   = state.exams.filter(e => e.curriculumId === activeCurriculum && e.status !== "draft")
@@ -195,7 +196,28 @@ export default function Reports() {
                 {stats.rows.map(r => (
                   <tr key={r.subjectId}>
                     <td className="p-2 border font-medium">{r.subject}</td>
-                    <td className="p-2 border">{r.score ?? "—"}</td>
+                    <td className="p-2 border">
+                      {canEditMarks ? (
+                        <input
+                          type="number"
+                          className="inline-edit w-16 text-center"
+                          defaultValue={r.score ?? ""}
+                          disabled={!canEditMarks}
+                          onBlur={(e) => {
+                            const raw = e.target.value;
+                            if (raw === "") {
+                              setMarkScore(r.entryId, null);
+                            } else {
+                              const n = Number(raw);
+                              if (!isNaN(n)) setMarkScore(r.entryId, n);
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        />
+                      ) : (
+                        r.score ?? "—"
+                      )}
+                    </td>
                     <td className={`p-2 border ${r.deviation > 0 ? "text-success" : r.deviation < 0 ? "text-destructive" : ""}`}>
                       {r.deviation > 0 ? "+" : ""}{r.deviation}
                     </td>

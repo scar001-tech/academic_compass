@@ -16,10 +16,13 @@ export default function Students() {
   const { canManageStudents } = useAuth();
   const [q, setQ] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [streamFilter, setStreamFilter] = useState<string>("all");
   const fileRef = useRef<HTMLInputElement>(null);
   const classes = state.classes.filter(c => c.curriculumId === activeCurriculum);
+  const streams = state.streams.filter(s => classFilter === "all" || s.classId === classFilter);
   const students = state.students.filter(s => s.curriculumId === activeCurriculum)
     .filter(s => classFilter === "all" || s.classId === classFilter)
+    .filter(s => streamFilter === "all" || s.streamId === streamFilter)
     .filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.admissionNo.toLowerCase().includes(q.toLowerCase()));
 
   const addStudent = () => {
@@ -44,7 +47,8 @@ export default function Students() {
   };
 
   const exportStudents = () => {
-    const data = students.map(s => {
+    const target = students.filter(s => streamFilter === "all" || s.streamId === streamFilter);
+    const data = target.map(s => {
       const cls = state.classes.find(c => c.id === s.classId);
       const stream = state.streams.find(st => st.id === s.streamId);
       return {
@@ -59,8 +63,9 @@ export default function Students() {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-    XLSX.writeFile(workbook, `students-${activeCurriculum}-${new Date().toISOString().slice(0,10)}.xlsx`);
-    toast.success("Students exported as Excel");
+    const suffix = streamFilter !== "all" ? `stream-${streamFilter}` : activeCurriculum;
+    XLSX.writeFile(workbook, `students-${suffix}-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success(`Exported ${data.length} students`);
   };
 
   const importStudents = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +100,10 @@ export default function Students() {
             if (!streamId && classId) {
               const fallback = s.streams.find(st => st.classId === classId);
               if (fallback) streamId = fallback.id;
+            }
+            if (streamFilter !== "all" && !streamId) {
+              const filtered = s.streams.find(st => st.id === streamFilter);
+              if (filtered) streamId = filtered.id;
             }
             s.students.push({
               id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -136,11 +145,18 @@ export default function Students() {
           <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground"/>
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or admission no." className="pl-8 w-64"/>
         </div>
-        <Select value={classFilter} onValueChange={setClassFilter}>
+        <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setStreamFilter("all"); }}>
           <SelectTrigger className="w-48"><SelectValue/></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All classes</SelectItem>
             {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={streamFilter} onValueChange={setStreamFilter} disabled={classFilter === "all"}>
+          <SelectTrigger className="w-48"><SelectValue/></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All streams</SelectItem>
+            {streams.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Badge variant="secondary" className="ml-auto self-center">{students.length} students</Badge>
