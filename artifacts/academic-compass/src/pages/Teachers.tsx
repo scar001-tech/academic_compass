@@ -22,6 +22,16 @@ interface BackendProfile {
   roles: string[];
 }
 
+const ALL_ROLES = [
+  { value: "admin", label: "Admin" },
+  { value: "principal", label: "Principal" },
+  { value: "hod", label: "Head of Department" },
+  { value: "class_teacher", label: "Class Teacher" },
+  { value: "subject_teacher", label: "Subject Teacher" },
+  { value: "teacher", label: "Teacher" },
+  { value: "senior_teacher", label: "Senior Teacher" },
+] as const;
+
 export default function Teachers() {
   const { state, update } = useSchool();
   const { isPrincipal } = useAuth();
@@ -116,7 +126,7 @@ export default function Teachers() {
     }
   };
 
-  const handleRoleToggle = async (userId: string, targetRole: "teacher" | "senior_teacher", hasRole: boolean) => {
+  const handleRoleToggle = async (userId: string, targetRole: string, hasRole: boolean) => {
     const action = hasRole ? "remove" : "add";
     try {
       await api.post("/auth/assign-role", { userId, role: targetRole, action });
@@ -156,7 +166,7 @@ export default function Teachers() {
             <h3 className="text-lg font-bold">Registered Staff — Approval &amp; Role Assignment</h3>
           </div>
           <p className="text-xs text-muted-foreground">
-            View all staff who have registered accounts. Approve access and assign Teacher or Senior Teacher roles.
+            View all staff who have registered accounts. Approve access and assign roles.
           </p>
           <div className="overflow-x-auto border border-border rounded-lg min-w-[640px]">
             <table className="w-full text-sm text-left">
@@ -166,18 +176,17 @@ export default function Teachers() {
                   <th className="px-3 md:px-6 py-3">Email</th>
                   <th className="px-3 md:px-6 py-3">Department</th>
                   <th className="px-3 md:px-6 py-3 text-center">Approved</th>
-                  <th className="px-3 md:px-6 py-3 text-center">Teacher</th>
-                  <th className="px-3 md:px-6 py-3 text-center">Senior Teacher</th>
+                  {ALL_ROLES.map((role) => (
+                    <th key={role.value} className="px-3 md:px-6 py-3 text-center">{role.label}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loadingProfiles ? (
-                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff...</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff...</td></tr>
                 ) : backendProfiles.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No registered staff yet.</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No registered staff yet.</td></tr>
                 ) : backendProfiles.map((p) => {
-                  const hasTeacher = p.roles.includes("teacher");
-                  const hasSeniorTeacher = p.roles.includes("senior_teacher");
                   const isPrincipalRow = p.roles.includes("admin") || p.roles.includes("principal");
                   return (
                     <tr key={p.id} className="hover:bg-muted/30 transition">
@@ -196,18 +205,17 @@ export default function Teachers() {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                        <div className="flex justify-center items-center gap-2">
-                          <span className={`text-xs ${hasTeacher ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} disabled={isPrincipalRow} />
-                        </div>
-                      </td>
-                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                        <div className="flex justify-center items-center gap-2">
-                          <span className={`text-xs ${hasSeniorTeacher ? "text-purple-600 font-semibold" : "text-muted-foreground"}`}>{hasSeniorTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} disabled={isPrincipalRow} />
-                        </div>
-                      </td>
+                      {ALL_ROLES.map((role) => {
+                        const hasRole = p.roles.includes(role.value);
+                        return (
+                          <td key={role.value} className="px-3 md:px-6 py-3 md:py-4 text-center">
+                            <div className="flex justify-center items-center gap-2">
+                              <span className={`text-xs ${hasRole ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasRole ? "Yes" : "No"}</span>
+                              <Switch checked={hasRole} onCheckedChange={() => handleRoleToggle(p.id, role.value, hasRole)} disabled={isPrincipalRow} />
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}

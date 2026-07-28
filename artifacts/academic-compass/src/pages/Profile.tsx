@@ -19,6 +19,16 @@ interface ProfileItem {
   isLocal?: boolean;
 }
 
+const ALL_ROLES = [
+  { value: "admin", label: "Admin" },
+  { value: "principal", label: "Principal" },
+  { value: "hod", label: "Head of Department" },
+  { value: "class_teacher", label: "Class Teacher" },
+  { value: "subject_teacher", label: "Subject Teacher" },
+  { value: "teacher", label: "Teacher" },
+  { value: "senior_teacher", label: "Senior Teacher" },
+] as const;
+
 export default function Profile() {
   const { user, roles, isTeacher, isSeniorTeacher, isPrincipal, canManageStaff, refreshRoles } = useAuth();
   const { state } = useSchool();
@@ -71,7 +81,7 @@ export default function Profile() {
     }
   };
 
-  const handleRoleToggle = async (userId: string, targetRole: "teacher" | "senior_teacher", hasRole: boolean) => {
+  const handleRoleToggle = async (userId: string, targetRole: string, hasRole: boolean) => {
     const action = hasRole ? "remove" : "add";
     try {
       await api.post("/auth/assign-role", { userId, role: targetRole, action });
@@ -93,8 +103,7 @@ export default function Profile() {
       Email: p.email,
       Department: p.department || "",
       Approved: p.approved ? "Yes" : "No",
-      Teacher: p.roles.includes("teacher") ? "Yes" : "No",
-      SeniorTeacher: p.roles.includes("senior_teacher") ? "Yes" : "No",
+      ...Object.fromEntries(ALL_ROLES.map(r => [r.label, p.roles.includes(r.value) ? "Yes" : "No"])),
     }));
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -205,7 +214,7 @@ export default function Profile() {
                 Principal — Staff Approval &amp; Role Assignment Panel
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                As the Principal, you approve new sign-ups and assign or remove Teacher and Senior Teacher roles.
+                As the Principal, you approve new sign-ups and assign or remove roles.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={exportStaff} disabled={profiles.length === 0}>
@@ -220,19 +229,18 @@ export default function Profile() {
                   <th className="px-3 md:px-6 py-3">Email</th>
                   <th className="px-3 md:px-6 py-3">Department</th>
                   <th className="px-3 md:px-6 py-3 text-center">Approved</th>
-                  <th className="px-3 md:px-6 py-3 text-center">Teacher</th>
-                  <th className="px-3 md:px-6 py-3 text-center">Senior Teacher</th>
+                  {ALL_ROLES.map((role) => (
+                    <th key={role.value} className="px-3 md:px-6 py-3 text-center">{role.label}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loadingProfiles ? (
-                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
                 ) : profiles.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
                 ) : profiles.map((p) => {
-                  const hasTeacher       = p.roles.includes("teacher");
-                  const hasSeniorTeacher = p.roles.includes("senior_teacher");
-                  const isPrincipalRow   = p.roles.includes("admin") || p.roles.includes("principal");
+                  const isPrincipalRow = p.roles.includes("admin") || p.roles.includes("principal");
                   const isLocal = p.isLocal;
                   return (
                     <tr key={p.id} className="hover:bg-muted/30 transition">
@@ -253,18 +261,17 @@ export default function Profile() {
                           </div>
                         )}
                       </td>
-                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                        <div className="flex justify-center items-center gap-2">
-                          <span className={`text-xs ${hasTeacher ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} disabled={isLocal} />
-                        </div>
-                      </td>
-                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                        <div className="flex justify-center items-center gap-2">
-                          <span className={`text-xs ${hasSeniorTeacher ? "text-purple-600 font-semibold" : "text-muted-foreground"}`}>{hasSeniorTeacher ? "Yes" : "No"}</span>
-                          <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} disabled={isLocal} />
-                        </div>
-                      </td>
+                      {ALL_ROLES.map((role) => {
+                        const hasRole = p.roles.includes(role.value);
+                        return (
+                          <td key={role.value} className="px-3 md:px-6 py-3 md:py-4 text-center">
+                            <div className="flex justify-center items-center gap-2">
+                              <span className={`text-xs ${hasRole ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasRole ? "Yes" : "No"}</span>
+                              <Switch checked={hasRole} onCheckedChange={() => handleRoleToggle(p.id, role.value, hasRole)} disabled={isLocal} />
+                            </div>
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
