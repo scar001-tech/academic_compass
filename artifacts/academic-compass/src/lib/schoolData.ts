@@ -544,7 +544,8 @@ export function statsForStudentExam(
   );
   const rows: StudentSubjectStat[] = [];
   subjectSheets.forEach((sh) => {
-    const sub = state.subjects.find(s => s.id === sh.subjectId)!;
+    const sub = state.subjects.find(s => s.id === sh.subjectId);
+    if (!sub) return;
     const allEntries = state.entries.filter(e => e.sheetId === sh.id && e.score != null);
     const sorted = [...allEntries].sort((a, b) => (b.score! - a.score!));
     const mine = state.entries.find(e => e.sheetId === sh.id && e.studentId === studentId);
