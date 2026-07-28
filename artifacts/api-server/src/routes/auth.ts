@@ -157,6 +157,7 @@ router.post("/signin", async (req, res) => {
 
     if (!profile.approved && DEV_BYPASS_APPROVAL) {
       await (await getStore()).setApproval(profile.id, true);
+      profile.approved = true;
     }
 
     const currentRoles = await (await getStore()).rolesForUser(profile.id);

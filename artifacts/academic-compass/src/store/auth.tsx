@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isTeacher = hasRole("teacher", "subject_teacher", "class_teacher");
   const isSeniorTeacher = hasRole("senior_teacher");
   const isApproved = isPrincipal || !!session?.user?.approved;
-  const isReadOnly = !isApproved || roles.length === 0;
+  const isReadOnly = !isApproved && roles.length === 0;
   const canManageStaff = isPrincipal;
   const canManageStudents = isPrincipal || hasRole("senior_teacher");
   const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
