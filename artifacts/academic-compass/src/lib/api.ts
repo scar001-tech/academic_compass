@@ -3,7 +3,8 @@
  * Requests go to /api/* routed through the Replit proxy to the API server.
  */
 
-const BASE = "/api";
+const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN ?? "").replace(/\/$/, "");
+const BASE = API_ORIGIN ? `${API_ORIGIN}/api` : "/api";
 
 async function request<T>(
   method: string,
