@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Frontend (Vite)",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@workspace/academic-compass",
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Backend API",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoExit",
+        "-Command",
+        "$env:SESSION_SECRET='dev-secret-key-change-in-production'; $env:DATABASE_URL='sqlite:./data/academic-compass.sqlite'; $env:PORT='8080'; $env:CORS_ORIGINS='http://localhost:5173'; $env:DEV_BYPASS_APPROVAL='true'; $env:NODE_ENV='development'; pnpm --filter @workspace/api-server run dev"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Launch Full Stack",
+      "configurations": [
+        "Launch Backend API",
+        "Launch Frontend (Vite)"
+      ],
+      "stopAll": true
+    }
+  ]
+}
