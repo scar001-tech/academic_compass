@@ -17,6 +17,8 @@ export default function MarkEntry() {
   const { state, activeCurriculum, update, setMarkScore, syncNow } = useSchool();
   const { isTeacher, isSeniorTeacher, isPrincipal, isReadOnly } = useAuth();
   const [params, setParams] = useSearchParams();
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
 
@@ -150,7 +152,7 @@ export default function MarkEntry() {
       if (!s.syncQueue.includes(e.id)) s.syncQueue.push(e.id);
     });
 
-    if (state.online) syncNow();
+    if (stateRef.current.online) syncNow();
   };
 
   return (
@@ -242,7 +244,7 @@ export default function MarkEntry() {
                           type="number" min={0} max={100}
                           className="h-9 w-24"
                           disabled={sheet.locked || !canEnterMarks}
-                          defaultValue={e?.score ?? ""}
+                          value={e?.score ?? ""}
                           onBlur={(ev) => changeScore(stu.id, sheet.subjectId, ev.target.value)}
                           onKeyDown={(ev) => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); }}
                         />

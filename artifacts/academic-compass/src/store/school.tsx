@@ -45,6 +45,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => {
       const next: AppState = structuredClone(prev);
       updater(next);
+      stateRef.current = next;
       return next;
     });
   }, []);

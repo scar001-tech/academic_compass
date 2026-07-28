@@ -189,7 +189,7 @@ export default function Marks() {
       if (!s.syncQueue.includes(e.id)) s.syncQueue.push(e.id);
     });
 
-    if (state.online) syncNow();
+    if (stateRef.current.online) syncNow();
   };
 
   const exportMarks = () => {
@@ -298,7 +298,7 @@ export default function Marks() {
                               type="number"
                               className="h-8 w-16 text-center mx-auto"
                               disabled={!canEnterMarks}
-                              defaultValue={cell?.score ?? ""}
+                              value={cell?.score ?? ""}
                               onBlur={(ev) => {
                                 changeScore(stu.id, sub.id, ev.target.value);
                               }}
