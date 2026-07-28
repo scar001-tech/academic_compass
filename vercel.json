@@ -2,7 +2,6 @@
   "buildCommand": "pnpm --filter @workspace/academic-compass run build",
   "outputDirectory": "artifacts/academic-compass/dist/public",
   "installCommand": "pnpm install",
-  "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

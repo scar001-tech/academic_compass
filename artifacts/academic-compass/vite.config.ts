@@ -14,6 +14,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH ?? '/';
 const apiOrigin = process.env.VITE_API_ORIGIN ?? process.env.API_ORIGIN ?? 'http://localhost:8080';
+const projectRoot = process.cwd();
 
 export default defineConfig({
   base: basePath,
@@ -37,19 +38,18 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, 'src'),
+      '@': path.resolve(projectRoot, 'src'),
       '@assets': path.resolve(
-        import.meta.dirname,
-        '..',
+        projectRoot,
         '..',
         'attached_assets',
       ),
     },
     dedupe: ['react', 'react-dom'],
   },
-  root: path.resolve(import.meta.dirname),
+  root: projectRoot,
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist/public'),
+    outDir: path.resolve(projectRoot, 'dist/public'),
     emptyOutDir: true,
   },
   server: {
