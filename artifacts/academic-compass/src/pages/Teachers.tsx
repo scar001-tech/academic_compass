@@ -4,16 +4,47 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Lock, Download, Upload } from "lucide-react";
-import { useRef } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Lock, Download, Upload, Shield } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { api } from "@/lib/api";
 import type { Teacher } from "@/lib/schoolData";
+
+interface BackendProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  department: string | null;
+  approved: boolean;
+  created_at: string;
+  roles: string[];
+}
 
 export default function Teachers() {
   const { state, update } = useSchool();
   const { isPrincipal } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [backendProfiles, setBackendProfiles] = useState<BackendProfile[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
+
+  const fetchProfiles = async () => {
+    if (!isPrincipal) return;
+    setLoadingProfiles(true);
+    try {
+      const data = await api.get<BackendProfile[]>("/auth/profiles");
+      setBackendProfiles(Array.isArray(data) ? data : []);
+    } catch {
+      toast.error("Failed to load staff profiles.");
+    } finally {
+      setLoadingProfiles(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [isPrincipal]); // eslint-disable-line
 
   const add = () => {
     if (!isPrincipal) { toast.error("Only the Principal can manage the staff directory"); return; }
@@ -74,10 +105,36 @@ export default function Teachers() {
     reader.readAsArrayBuffer(file);
   };
 
+  const handleApprovalToggle = async (userId: string, currentlyApproved: boolean) => {
+    try {
+      await api.post("/auth/set-approval", { userId, approved: !currentlyApproved });
+      toast.success(!currentlyApproved ? "Staff member approved." : "Staff access revoked.");
+      setBackendProfiles(prev => prev.map(p => p.id === userId ? { ...p, approved: !currentlyApproved } : p));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update approval status.";
+      toast.error(msg);
+    }
+  };
+
+  const handleRoleToggle = async (userId: string, targetRole: "teacher" | "senior_teacher", hasRole: boolean) => {
+    const action = hasRole ? "remove" : "add";
+    try {
+      await api.post("/auth/assign-role", { userId, role: targetRole, action });
+      toast.success("Role assignment updated successfully.");
+      setBackendProfiles(prev => prev.map(p => {
+        if (p.id !== userId) return p;
+        return { ...p, roles: action === "add" ? [...p.roles, targetRole] : p.roles.filter(r => r !== targetRole) };
+      }));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update role assignment.";
+      toast.error(msg);
+    }
+  };
+
   return (
     <div>
       <PageHeader title="Teachers" description={isPrincipal
-          ? "Manage staff and curriculum assignments."
+          ? "Manage staff directory, assignments, and registered accounts."
           : "View-only. Only the Principal can edit the staff directory."}
         actions={isPrincipal
           ? <div className="flex gap-2">
@@ -91,6 +148,75 @@ export default function Teachers() {
               <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add teacher</Button>
             </div>
           : <Badge variant="outline"><Lock className="h-3 w-3 mr-1"/>Read only</Badge>} />
+
+      {isPrincipal && (
+        <Card className="p-4 md:p-6 mb-4 space-y-4 md:space-y-6">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-bold">Registered Staff — Approval &amp; Role Assignment</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            View all staff who have registered accounts. Approve access and assign Teacher or Senior Teacher roles.
+          </p>
+          <div className="overflow-x-auto border border-border rounded-lg min-w-[640px]">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted text-muted-foreground text-xs uppercase font-medium border-b border-border">
+                <tr>
+                  <th className="px-3 md:px-6 py-3">Full Name</th>
+                  <th className="px-3 md:px-6 py-3">Email</th>
+                  <th className="px-3 md:px-6 py-3">Department</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Approved</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Teacher</th>
+                  <th className="px-3 md:px-6 py-3 text-center">Senior Teacher</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loadingProfiles ? (
+                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff...</td></tr>
+                ) : backendProfiles.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No registered staff yet.</td></tr>
+                ) : backendProfiles.map((p) => {
+                  const hasTeacher = p.roles.includes("teacher");
+                  const hasSeniorTeacher = p.roles.includes("senior_teacher");
+                  const isPrincipalRow = p.roles.includes("admin") || p.roles.includes("principal");
+                  return (
+                    <tr key={p.id} className="hover:bg-muted/30 transition">
+                      <td className="px-3 md:px-6 py-3 md:py-4 font-medium">{p.full_name || "Unnamed"}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-muted-foreground">{p.email}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-muted-foreground">{p.department || "—"}</td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                        {isPrincipalRow ? (
+                          <span className="text-xs text-muted-foreground italic">Principal</span>
+                        ) : (
+                          <div className="flex justify-center items-center gap-2">
+                            <span className={`text-xs ${p.approved ? "text-success font-semibold" : "text-warning-foreground"}`}>
+                              {p.approved ? "Approved" : "Pending"}
+                            </span>
+                            <Switch checked={p.approved} onCheckedChange={() => handleApprovalToggle(p.id, p.approved)} />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                        <div className="flex justify-center items-center gap-2">
+                          <span className={`text-xs ${hasTeacher ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>{hasTeacher ? "Yes" : "No"}</span>
+                          <Switch checked={hasTeacher} onCheckedChange={() => handleRoleToggle(p.id, "teacher", hasTeacher)} disabled={isPrincipalRow} />
+                        </div>
+                      </td>
+                      <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                        <div className="flex justify-center items-center gap-2">
+                          <span className={`text-xs ${hasSeniorTeacher ? "text-purple-600 font-semibold" : "text-muted-foreground"}`}>{hasSeniorTeacher ? "Yes" : "No"}</span>
+                          <Switch checked={hasSeniorTeacher} onCheckedChange={() => handleRoleToggle(p.id, "senior_teacher", hasSeniorTeacher)} disabled={isPrincipalRow} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       <Card className="overflow-x-auto card-pad">
         <table className="data-table">
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Curricula</th>{isPrincipal && <th></th>}</tr></thead>
