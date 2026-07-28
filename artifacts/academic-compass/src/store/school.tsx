@@ -7,7 +7,8 @@ import {
   pushMarkEntry, fetchAllMarkEntries, fetchAllTimetableSlots,
   fetchPendingConflicts, resolveRemoteConflict,
   pushTimetableSlot, deleteTimetableSlot,
-  RemoteTimetableSlot,
+  RemoteTimetableSlot, RemoteMarkEntry, RemoteConflict,
+  pushSchoolSnapshot, fetchSchoolSnapshot,
 } from "@/lib/syncService";
 import { toast } from "sonner";
 
@@ -73,6 +74,23 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     try {
       const s = stateRef.current;
 
+      await pushSchoolSnapshot({
+        students: s.students,
+        teachers: s.teachers,
+        classes: s.classes,
+        streams: s.streams,
+        subjects: s.subjects,
+        exams: s.exams,
+        sheets: s.sheets,
+        entries: s.entries,
+        timetable: s.timetable ?? [],
+        conflicts: s.conflicts,
+        curricula: s.curricula,
+        settings: s.settings,
+        classRemarks: s.classRemarks,
+        principalRemarks: s.principalRemarks,
+      });
+
       const pending = s.entries.filter(e => e.pending);
       let pushed = 0, conflicted = 0;
       for (const e of pending) {
@@ -129,7 +147,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         }
         for (const e of n.entries) {
           if (e.pending) {
-            const remote = remoteEntries.find(r => r.id === e.id);
+            const remote = remoteEntries.find((r: RemoteMarkEntry) => r.id === e.id);
             if (remote) {
               e.version = remote.version;
               e.pending = false;
@@ -160,8 +178,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         });
 
         n.conflicts = remoteConflicts
-          .filter(c => c.status === "pending")
-          .map(c => ({
+          .filter((c: RemoteConflict) => c.status === "pending")
+          .map((c: RemoteConflict) => ({
             id: c.id,
             entity: c.entity as SyncConflict["entity"],
             field: c.field,
@@ -178,6 +196,32 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         n.syncQueue = n.entries.filter(e => e.pending).map(e => e.id);
         n.lastSyncAt = Date.now();
       });
+
+      const remoteSnapshot = await fetchSchoolSnapshot();
+      if (remoteSnapshot) {
+        update((n) => {
+          const arrays = ["students","teachers","classes","streams","subjects","exams","sheets","entries","timetable","conflicts","classRemarks","principalRemarks"] as const;
+          for (const key of arrays) {
+            const remoteArr = remoteSnapshot[key] ?? [];
+            const localArr = n[key] ?? [];
+            const map = new Map<string, any>();
+            for (const item of [...remoteArr, ...localArr]) {
+              if (!item?.id) continue;
+              const existing = map.get(item.id);
+              if (!existing || (item.updatedAt && (!existing.updatedAt || item.updatedAt > existing.updatedAt))) {
+                map.set(item.id, item);
+              }
+            }
+            n[key] = Array.from(map.values()).sort((a: any, b: any) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0));
+          }
+          if (remoteSnapshot.curricula?.length) {
+            n.curricula = remoteSnapshot.curricula;
+          }
+          if (remoteSnapshot.settings) {
+            n.settings = { ...n.settings, ...remoteSnapshot.settings };
+          }
+        });
+      }
 
       if (pushed)     toast.success(`Synced ${pushed} change${pushed > 1 ? "s" : ""}`);
       if (conflicted) toast.warning(`${conflicted} conflict${conflicted > 1 ? "s" : ""} to resolve`);
@@ -197,6 +241,17 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       if (hasPending) syncNow();
     }
   }, [state.online]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!localStorage.getItem("ac_token")) return;
+    const onFocus = () => { if (navigator.onLine) syncNow(); };
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(() => { if (navigator.onLine) syncNow(); }, 30000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
+  }, [syncNow]);
 
   useEffect(() => {
     if (localStorage.getItem("ac_token")) {

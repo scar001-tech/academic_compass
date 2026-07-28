@@ -60,3 +60,9 @@ export const syncConflicts = pgTable("ac_sync_conflicts", {
   createdAt:      timestamp("created_at").defaultNow().notNull(),
   resolvedAt:     timestamp("resolved_at"),
 });
+
+export const schoolData = pgTable("ac_school_data", {
+  id:        text("id").primaryKey().notNull().default("global"),
+  data:      text("data").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

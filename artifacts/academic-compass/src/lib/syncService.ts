@@ -1,5 +1,5 @@
 /**
- * REST sync layer for mark entries and timetable slots.
+ * REST sync layer for mark entries, timetable slots, conflicts, and full school snapshots.
  * Offline-first: local store is authoritative for reads; writes push to /api/*.
  */
 import { api } from "./api";
@@ -47,6 +47,23 @@ export interface RemoteConflict {
   resolution: string | null;
   custom_value: string | null;
   created_at: string;
+}
+
+export interface SchoolSnapshot {
+  students: any[];
+  teachers: any[];
+  classes: any[];
+  streams: any[];
+  subjects: any[];
+  exams: any[];
+  sheets: any[];
+  entries: any[];
+  timetable: any[];
+  conflicts: any[];
+  curricula: any[];
+  settings: any;
+  classRemarks: any[];
+  principalRemarks: any[];
 }
 
 export async function pushMarkEntry(local: {
@@ -129,5 +146,23 @@ export async function deleteTimetableSlot(id: string) {
     await api.delete(`/timetable-slots/${encodeURIComponent(id)}`);
   } catch (err) {
     console.error("[deleteTimetableSlot]", err);
+  }
+}
+
+export async function pushSchoolSnapshot(local: SchoolSnapshot): Promise<"ok" | "error"> {
+  try {
+    await api.post("/sync", local);
+    return "ok";
+  } catch {
+    return "error";
+  }
+}
+
+export async function fetchSchoolSnapshot(): Promise<SchoolSnapshot | null> {
+  try {
+    const result = await api.get<{ data: SchoolSnapshot | null }>("/sync");
+    return result.data;
+  } catch {
+    return null;
   }
 }

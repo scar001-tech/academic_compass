@@ -117,7 +117,9 @@ interface DataStore {
   }): Promise<"ok" | "conflict">;
   deleteTimetableSlot(id: string): Promise<void>;
   listConflicts(status?: "pending" | "resolved"): Promise<SyncConflictRow[]>;
-  resolveConflict(id: string, resolution: "server" | "this" | "custom", customValue?: string | null): Promise<void>;
+  resolveConflict(id: string, resolution: string | null, customValue?: string | null): Promise<void>;
+  getSchoolSnapshot(): Promise<{ id: string; data: string; updatedAt: string } | null>;
+  setSchoolSnapshot(data: string): Promise<void>;
 }
 
 let storePromise: Promise<DataStore> | null = null;
@@ -198,6 +200,11 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
       custom_value TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       resolved_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS ac_school_data (
+      id TEXT PRIMARY KEY DEFAULT 'global',
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
@@ -357,14 +364,22 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
       sqliteDb.prepare("UPDATE ac_sync_conflicts SET status = 'resolved', resolution = ?, custom_value = ?, resolved_at = ? WHERE id = ?")
         .run(resolution, customValue ?? null, new Date().toISOString(), id);
     },
+    async getSchoolSnapshot() {
+      const row = sqliteDb.prepare("SELECT * FROM ac_school_data WHERE id = 'global' LIMIT 1").get() as any;
+      return row ? { id: row.id, data: row.data, updatedAt: row.updated_at } : null;
+    },
+    async setSchoolSnapshot(data) {
+      sqliteDb.prepare("INSERT INTO ac_school_data (id, data, updated_at) VALUES ('global', ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
+        .run(data, new Date().toISOString());
+    },
   };
 }
 
 async function createPostgresStore(): Promise<DataStore> {
-  const [{ db, profiles, userRoles, markEntries, timetableSlots, syncConflicts }, { eq, and }] = await Promise.all([
-    import("@workspace/db"),
-    import("drizzle-orm"),
-  ]);
+  const dbModule = await import("@workspace/db");
+  const { db, profiles, userRoles, markEntries, timetableSlots, syncConflicts } = dbModule;
+  const { eq, and } = await import("drizzle-orm");
+  const schoolData = (dbModule as any).schoolData;
 
   return {
     async getProfileByEmail(email) {
@@ -533,6 +548,20 @@ async function createPostgresStore(): Promise<DataStore> {
         customValue: customValue ?? null,
         resolvedAt: new Date(),
       }).where(eq(syncConflicts.id, id));
+    },
+    async getSchoolSnapshot() {
+      const [row] = await db.select().from(schoolData).where(eq(schoolData.id, "global")).limit(1);
+      return row ? { id: row.id, data: row.data, updatedAt: row.updatedAt.toISOString() } : null;
+    },
+    async setSchoolSnapshot(data) {
+      await db.insert(schoolData).values({
+        id: "global",
+        data,
+        updatedAt: new Date(),
+      }).onConflictDoUpdate({
+        target: schoolData.id,
+        set: { data, updatedAt: new Date() },
+      });
     },
   };
 }
