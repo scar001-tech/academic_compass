@@ -15,12 +15,12 @@ import type { MarkEntry } from "@/lib/schoolData";
 
 export default function MarkEntry() {
   const { state, activeCurriculum, update, setMarkScore, syncNow } = useSchool();
-  const { isTeacher, isSeniorTeacher, isPrincipal } = useAuth();
+  const { isTeacher, isSeniorTeacher, isPrincipal, isReadOnly } = useAuth();
   const [params, setParams] = useSearchParams();
 
   const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
 
-  if (!canEnterMarks) {
+  if (!canEnterMarks && !isReadOnly) {
     return (
       <div className="min-h-screen grid place-items-center bg-background px-4">
         <Card className="w-full max-w-md p-6 text-center space-y-4">
@@ -241,7 +241,7 @@ export default function MarkEntry() {
                         <Input
                           type="number" min={0} max={100}
                           className="h-9 w-24"
-                          disabled={sheet.locked}
+                          disabled={sheet.locked || !canEnterMarks}
                           defaultValue={e?.score ?? ""}
                           onBlur={(ev) => changeScore(stu.id, sheet.subjectId, ev.target.value)}
                           onKeyDown={(ev) => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); }}

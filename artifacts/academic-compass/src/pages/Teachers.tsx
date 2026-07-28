@@ -260,7 +260,7 @@ export default function Teachers() {
         </Card>
       )}
 
-      {isPrincipal && (
+      {
         <Card className="p-4 md:p-6 mb-4 space-y-4 md:space-y-6">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -332,7 +332,7 @@ export default function Teachers() {
             </table>
           </div>
         </Card>
-      )}
+      }
     </div>
   );
 }

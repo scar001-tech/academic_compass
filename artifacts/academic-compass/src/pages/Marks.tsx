@@ -15,13 +15,13 @@ import type { MarkEntry } from "@/lib/schoolData";
 
 export default function Marks() {
   const { state, activeCurriculum, update, syncNow } = useSchool();
-  const { isTeacher, isSeniorTeacher, isPrincipal } = useAuth();
+  const { isTeacher, isSeniorTeacher, isPrincipal, isReadOnly } = useAuth();
   const stateRef = useRef(state);
   stateRef.current = state;
 
   const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
 
-  if (!canEnterMarks) {
+  if (!canEnterMarks && !isReadOnly) {
     return (
       <div className="min-h-screen grid place-items-center bg-background px-4">
         <Card className="w-full max-w-md p-6 text-center space-y-4">
@@ -229,10 +229,10 @@ export default function Marks() {
               {state.online ? <><Cloud className="h-3 w-3 mr-1" />Online</> : <><CloudOff className="h-3 w-3 mr-1" />Offline</>}
             </Badge>
             {pendingCount > 0 && <Badge className="bg-warning text-warning-foreground">{pendingCount} queued</Badge>}
-            <Button size="sm" variant="outline" disabled={!state.online || pendingCount === 0} onClick={syncNow}>
+            <Button size="sm" variant="outline" disabled={!state.online || pendingCount === 0 || !canEnterMarks} onClick={syncNow}>
               <Cloud className="h-4 w-4 mr-1" />Sync
             </Button>
-            <Button size="sm" variant="outline" onClick={exportMarks} disabled={!examId || !streamId || students.length === 0}>
+            <Button size="sm" variant="outline" onClick={exportMarks} disabled={!examId || !streamId || students.length === 0 || !canEnterMarks}>
               <Download className="h-4 w-4 mr-1" />Export
             </Button>
           </div>
