@@ -567,7 +567,7 @@ export function statsForStudentExam(
   const mean = validRows.length ? validRows.reduce((a, r) => a + (r.score ?? 0), 0) / validRows.length : 0;
   const totalPoints = validRows.reduce((a, r) => a + (gradeFor(r.score, curriculum.gradingScale)?.points || 0), 0);
   const overallGrade = gradeFor(mean, curriculum.gradingScale)?.grade || "—";
-  return { rows, mean: Math.round(mean * 10) / 10, totalPoints, overallGrade };
+  return { rows: validRows, mean: Math.round(mean * 10) / 10, totalPoints, overallGrade };
 }
 
 export function identifyWeakAreas(
