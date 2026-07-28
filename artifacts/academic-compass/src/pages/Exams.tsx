@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Download, Upload } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 export default function Exams() {
   const { state, activeCurriculum, update } = useSchool();
@@ -19,15 +20,17 @@ export default function Exams() {
   });
 
   const exportExams = () => {
-    const data = JSON.stringify(exams, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `exams-${activeCurriculum}-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Exams exported successfully");
+    const worksheet = XLSX.utils.json_to_sheet(exams.map(ex => ({
+      Name: ex.name,
+      Term: ex.term,
+      Year: ex.year,
+      OutOf: ex.outOf,
+      Status: ex.status,
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Exams");
+    XLSX.writeFile(workbook, `exams-${activeCurriculum}-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success("Exams exported as Excel");
   };
 
   const importExams = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,30 +39,33 @@ export default function Exams() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const imported = JSON.parse(ev.target?.result as string);
-        if (!Array.isArray(imported)) throw new Error("Invalid format");
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<any>(sheet);
+        if (!Array.isArray(json) || json.length === 0) throw new Error("Invalid format");
         update(s => {
-          imported.forEach((ex: any) => {
-            if (!ex.id || !ex.name || !ex.term || !ex.year) return;
+          json.forEach((row) => {
+            if (!row.Name || !row.Term || !row.Year) return;
             s.exams.push({
-              id: ex.id || `ex_${Date.now()}`,
+              id: `ex_${Date.now()}`,
               curriculumId: activeCurriculum,
-              name: ex.name,
-              term: ex.term,
-              year: ex.year,
-              outOf: ex.outOf || 100,
-              status: ex.status || "draft",
+              name: String(row.Name),
+              term: Number(row.Term) as 1 | 2 | 3,
+              year: Number(row.Year),
+              outOf: Number(row.OutOf) || 100,
+              status: (["draft", "open", "closed"].includes(String(row.Status)) ? String(row.Status) : "draft") as "draft" | "open" | "closed",
             });
           });
         });
-        toast.success(`Imported ${imported.length} exams`);
+        toast.success(`Imported ${json.length} exams from Excel`);
       } catch {
-        toast.error("Failed to import exams. Invalid JSON format.");
+        toast.error("Failed to import exams. Please upload a valid Excel (.xlsx) file.");
       } finally {
         if (fileRef.current) fileRef.current.value = "";
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -73,7 +79,7 @@ export default function Exams() {
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4 mr-1"/>Import
             </Button>
-            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={importExams} />
+            <input ref={fileRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={importExams} />
             <Button onClick={add}><Plus className="h-4 w-4 mr-1"/>Add exam</Button>
           </div>
         }/>

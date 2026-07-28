@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
   User as UserIcon, Shield, Mail, Calendar, CheckCircle2, XCircle,
-  Crown, Users, Clock, Briefcase,
+  Crown, Users, Clock, Briefcase, Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ProfileItem {
   id: string; email: string; full_name: string | null; department: string | null;
@@ -84,6 +85,22 @@ export default function Profile() {
       const msg = err instanceof Error ? err.message : "Failed to update role assignment.";
       toast.error(msg);
     }
+  };
+
+  const exportStaff = () => {
+    const data = profiles.map(p => ({
+      FullName: p.full_name || "",
+      Email: p.email,
+      Department: p.department || "",
+      Approved: p.approved ? "Yes" : "No",
+      Teacher: p.roles.includes("teacher") ? "Yes" : "No",
+      SeniorTeacher: p.roles.includes("senior_teacher") ? "Yes" : "No",
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Staff");
+    XLSX.writeFile(workbook, `staff-roles-${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast.success("Staff list exported as Excel");
   };
 
   return (
@@ -181,14 +198,19 @@ export default function Profile() {
       {/* Principal admin panel */}
       {isAuthenticator && (
         <Card className="p-4 md:p-6 space-y-4 md:space-y-6">
-          <div>
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary animate-pulse" />
-              Principal — Staff Approval &amp; Role Assignment Panel
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              As the Principal, you approve new sign-ups and assign or remove Teacher and Senior Teacher roles.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary animate-pulse" />
+                Principal — Staff Approval &amp; Role Assignment Panel
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                As the Principal, you approve new sign-ups and assign or remove Teacher and Senior Teacher roles.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={exportStaff} disabled={profiles.length === 0}>
+              <Download className="h-4 w-4 mr-1"/>Export Staff
+            </Button>
           </div>
           <div className="overflow-x-auto border border-border rounded-lg min-w-[640px]">
             <table className="w-full text-sm text-left">
