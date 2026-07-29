@@ -11,10 +11,13 @@ import { Search, Plus, Trash2, Lock, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { PDFParse } from "pdf-parse";
+import { GlobalWorkerOptions } from "pdfjs-dist";
 import mammoth from "mammoth";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+
+GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 export default function Students() {
   const { state, activeCurriculum, update } = useSchool();

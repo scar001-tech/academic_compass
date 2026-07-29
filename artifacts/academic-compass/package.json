@@ -80,6 +80,7 @@
     "@vercel/analytics": "^2.0.1",
     "mammoth": "^1.12.0",
     "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "5.4.296",
     "xlsx": "^0.18.5"
   }
 }
