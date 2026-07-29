@@ -82,21 +82,19 @@ export default function Students() {
     if (!file) return;
     const name = file.name.toLowerCase();
     try {
-      let rows: Record<string, any>[] = [];
+      let rows: { admissionNo: string; name: string }[] = [];
+
       if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
         const data = new Uint8Array(await file.arrayBuffer());
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<any>(sheet, { defval: "" });
-        const normalized = json.map((row) => {
-          const lower: Record<string, any> = {};
-          Object.keys(row).forEach((key) => {
-            const k = key.toLowerCase().trim();
-            lower[k] = String(row[key] ?? "").trim();
-          });
-          return lower;
+        const rawRows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1, defval: "" });
+        rows = rawRows.map((row: any) => {
+          const cells = Array.isArray(row) ? row : [];
+          const admissionNo = String(cells[0] ?? "").trim();
+          const studentName = String(cells[1] ?? "").trim();
+          return { admissionNo, name: studentName };
         });
-        rows = normalized;
       } else if (name.endsWith(".pdf")) {
         const data = new Uint8Array(await file.arrayBuffer());
         const pdf = new PDFParse({ verbosity: 0 });
@@ -108,31 +106,20 @@ export default function Students() {
           const pageText = await (pdf as any).getText(i);
           text += (pageText || "") + "\n";
         }
-        rows = extractStudentsFromText(text);
+        rows = extractRowsFromRawText(text);
       } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
         const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
         const text = result.value || "";
-        rows = extractStudentsFromText(text);
+        rows = extractRowsFromRawText(text);
       } else {
         throw new Error("Unsupported file format");
       }
 
-      const parsed = rows.map((row) => {
-        const admissionNo = pick(row, [
-          "admission no", "admissionno", "admission_number", "admissionnumber", "admission #", "admission#", "admission", "adm no", "admno", "student id", "studentid", "id"
-        ]);
-        const studentName = pick(row, [
-          "name", "full name", "fullname", "student name", "studentname", "learner name", "learnername", "pupil name"
-        ]);
-        return {
-          admissionNo: String(admissionNo ?? "").trim(),
-          name: String(studentName ?? "").trim(),
-        };
-      }).filter((row) => row.admissionNo || row.name);
+      const filtered = rows.filter((row) => row.admissionNo || row.name);
 
-      if (parsed.length === 0) throw new Error("No students found in file");
+      if (filtered.length === 0) throw new Error("No students found in file");
 
-      setPreview(parsed);
+      setPreview(filtered);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to import students";
       toast.error(message);
@@ -141,35 +128,19 @@ export default function Students() {
     }
   };
 
-  const pick = (row: Record<string, string>, keys: string[]) => {
-    for (const key of keys) {
-      const value = row[key];
-      if (value && String(value).trim()) return String(value).trim();
-    }
-    return null;
-  };
-
-  const extractStudentsFromText = (text: string): Record<string, string>[] => {
+  const extractRowsFromRawText = (text: string): { admissionNo: string; name: string }[] => {
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-    const rows: Record<string, string>[] = [];
+    const rows: { admissionNo: string; name: string }[] = [];
 
     for (const line of lines) {
-      const admissionMatch = line.match(/admission\s*(?:no|number|#)?[:\s]+([A-Za-z0-9\-\/]+)/i);
-      const nameMatch = line.match(/name[:\s]+([A-Za-z0-9\s\-\.']+)/i);
-      if (admissionMatch || nameMatch) {
-        const existing = rows[rows.length - 1];
-        if (existing) {
-          if (admissionMatch && !existing.admission_no) existing.admission_no = admissionMatch[1].trim();
-          if (nameMatch && !existing.name) existing.name = nameMatch[1].trim();
-        } else if (admissionMatch && nameMatch) {
-          rows.push({ admission_no: admissionMatch[1].trim(), name: nameMatch[1].trim() });
-        } else if (admissionMatch || nameMatch) {
-          rows.push({ admission_no: admissionMatch ? admissionMatch[1].trim() : "", name: nameMatch ? nameMatch[1].trim() : "" });
-        }
-      } else {
-        const parts = line.split(/\s{2,}|\t/).map((p) => p.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          rows.push({ admission_no: parts[0], name: parts.slice(1).join(" ") });
+      const parts = line.split(/\s{2,}|\t/).map((p) => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        rows.push({ admissionNo: parts[0], name: parts.slice(1).join(" ") });
+      } else if (parts.length === 1) {
+        const value = parts[0];
+        const admissionMatch = value.match(/^([A-Za-z0-9\-\/]+)$/);
+        if (admissionMatch) {
+          rows.push({ admissionNo: admissionMatch[1], name: "" });
         }
       }
     }
