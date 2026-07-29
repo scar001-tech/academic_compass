@@ -174,7 +174,7 @@ export default function Reports() {
                 <BarChart data={stats.rows.map(r => ({ subject: r.subject, score: r.score || 0 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb"/>
                   <XAxis dataKey="subject" stroke="#374151" fontSize={10}/>
-                  <YAxis domain={[0,100]} stroke="#374151" fontSize={10}/>
+                  <YAxis domain={[0,100]} ticks={[0,10,20,30,40,50,60,70,80,90,100]} stroke="#374151" fontSize={10}/>
                   <Tooltip/>
                   <Bar dataKey="score" fill="hsl(var(--primary))" radius={[3,3,0,0]}/>
                 </BarChart>
