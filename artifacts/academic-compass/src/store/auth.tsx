@@ -30,6 +30,7 @@ interface AuthCtx {
   canEditTimetable: boolean;
   isTeacher: boolean;
   isSeniorTeacher: boolean;
+  isHod: boolean;
   isPrincipal: boolean;
   isApproved: boolean;
   isReadOnly: boolean;
@@ -124,17 +125,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canEditTimetable = isPrincipal || hasRole("senior_teacher");
   const isTeacher = hasRole("teacher", "subject_teacher", "class_teacher");
   const isSeniorTeacher = hasRole("senior_teacher");
+  const isHod = hasRole("hod");
   const isApproved = isPrincipal || !!session?.user?.approved;
   const isReadOnly = !isApproved && roles.length === 0;
   const canManageStaff = isPrincipal;
   const canManageStudents = isPrincipal || hasRole("senior_teacher");
-  const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
+  const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher || isHod;
 
   return (
     <Ctx.Provider value={{
       session, user: session?.user ?? null, roles, loading,
       signIn, signUp, signOut, hasRole, refreshRoles, refreshProfile, canEditTimetable,
-      isTeacher, isSeniorTeacher, isPrincipal, isApproved, isReadOnly, canManageStaff, canManageStudents, canEnterMarks,
+      isTeacher, isSeniorTeacher, isHod, isPrincipal, isApproved, isReadOnly, canManageStaff, canManageStudents, canEnterMarks,
     }}>
       {children}
     </Ctx.Provider>
