@@ -76,6 +76,7 @@ export interface Student {
   streamId: ID;
   vap: string; // Values-Attitudes-Personality note
   guardianPhone?: string;
+  feeBalance?: number;
 }
 
 export interface Exam {

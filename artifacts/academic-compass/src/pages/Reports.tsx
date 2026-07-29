@@ -159,6 +159,11 @@ export default function Reports() {
               <input className="inline-edit w-full" value={student.vap} disabled={!canManageStudents}
                 onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.vap = e.target.value; })}/>
             </div>
+            <div className="col-span-2 md:col-span-4">
+              <div className="text-[10px] uppercase text-muted-foreground">School Fee Balance</div>
+              <input className="inline-edit w-full" value={student.feeBalance ?? ""} disabled={!canManageStudents}
+                onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.feeBalance = e.target.value ? Number(e.target.value) : undefined; })}/>
+            </div>
           </section>
 
           {/* Chart */}
