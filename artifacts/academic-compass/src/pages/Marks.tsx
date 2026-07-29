@@ -15,11 +15,11 @@ import type { MarkEntry } from "@/lib/schoolData";
 
 export default function Marks() {
   const { state, activeCurriculum, update, syncNow } = useSchool();
-  const { isTeacher, isSeniorTeacher, isPrincipal, isReadOnly } = useAuth();
+  const { isTeacher, isSeniorTeacher, isPrincipal, isHod, isReadOnly } = useAuth();
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher;
+  const canEnterMarks = isPrincipal || isSeniorTeacher || isTeacher || isHod;
 
   if (!canEnterMarks && !isReadOnly) {
     return (
