@@ -38,10 +38,10 @@ function mergeSnapshots(remote: any, local: any): any {
   if (!remote) return local;
   if (!local) return remote;
   const merged = { ...remote };
-  const arrays = ["students", "teachers", "classes", "streams", "subjects", "exams", "sheets", "entries", "timetable", "conflicts", "settings", "classRemarks", "principalRemarks", "transcripts"];
+  const arrays = ["students", "teachers", "classes", "streams", "subjects", "exams", "sheets", "entries", "timetable", "conflicts", "classRemarks", "principalRemarks"];
   for (const key of arrays) {
-    const remoteArr = remote[key] ?? [];
-    const localArr = local[key] ?? [];
+    const remoteArr = Array.isArray(remote[key]) ? remote[key] : [];
+    const localArr = Array.isArray(local[key]) ? local[key] : [];
     const map = new Map<string, any>();
     for (const item of [...remoteArr, ...localArr]) {
       if (!item?.id) continue;
