@@ -43,6 +43,7 @@ export default function MarkEntry() {
   const [streamId, setStreamId]   = useState<string>(preSheetObj?.streamId || "");
   const [subjectId, setSubjectId] = useState<string>(preSheetObj?.subjectId || "");
   const [examId, setExamId]       = useState<string>(preSheetObj?.examId || "");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const classes  = state.classes.filter(c => c.curriculumId === activeCurriculum);
   const streams  = state.streams.filter(s => s.classId === classId);
@@ -234,8 +235,8 @@ export default function MarkEntry() {
                 {students.map((stu, i) => {
                   const e  = entries.find(x => x.studentId === stu.id);
                   const gb = gradeFor(e?.score ?? null, curriculum.gradingScale);
-                  const [draft, setDraft] = useState<string>(String(e?.score ?? ""));
-                  useEffect(() => { setDraft(String(e?.score ?? "")); }, [e?.score]);
+                  const key = `${stu.id}_${sheet.subjectId}`;
+                  const draft = drafts[key] ?? String(e?.score ?? "");
                   return (
                     <tr key={stu.id}>
                       <td className="text-muted-foreground">{i+1}</td>
@@ -247,8 +248,11 @@ export default function MarkEntry() {
                           className="h-9 w-24"
                           disabled={sheet.locked || !canEnterMarks}
                           value={draft}
-                          onChange={(ev) => setDraft(ev.target.value)}
-                          onBlur={(ev) => changeScore(stu.id, sheet.subjectId, ev.target.value)}
+                          onChange={(ev) => setDrafts((prev) => ({ ...prev, [key]: ev.target.value }))}
+                          onBlur={(ev) => {
+                            changeScore(stu.id, sheet.subjectId, ev.target.value);
+                            setDrafts((prev) => ({ ...prev, [key]: String(e?.score ?? "") }));
+                          }}
                           onKeyDown={(ev) => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); }}
                         />
                       </td>

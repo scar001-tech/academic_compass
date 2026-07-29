@@ -38,6 +38,7 @@ export default function Marks() {
   const [classId, setClassId] = useState("");
   const [streamId, setStreamId] = useState("");
   const [examId, setExamId] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const classes  = state.classes.filter(c => c.curriculumId === activeCurriculum);
   const streams  = state.streams.filter(s => s.classId === classId);
@@ -292,8 +293,8 @@ export default function Marks() {
                       <td className="font-medium">{stu.name}</td>
                       {subjects.map(sub => {
                         const cell = matrix[stu.id]?.[sub.id];
-                        const [draft, setDraft] = useState<string>(String(cell?.score ?? ""));
-                        useEffect(() => { setDraft(String(cell?.score ?? "")); }, [cell?.score]);
+                        const key = `${stu.id}_${sub.id}`;
+                        const draft = drafts[key] ?? String(cell?.score ?? "");
                         return (
                           <td key={sub.id} className="text-center">
                             <Input
@@ -301,9 +302,10 @@ export default function Marks() {
                               className="h-8 w-16 text-center mx-auto"
                               disabled={!canEnterMarks}
                               value={draft}
-                              onChange={(ev) => setDraft(ev.target.value)}
+                              onChange={(ev) => setDrafts((prev) => ({ ...prev, [key]: ev.target.value }))}
                               onBlur={(ev) => {
                                 changeScore(stu.id, sub.id, ev.target.value);
+                                setDrafts((prev) => ({ ...prev, [key]: String(cell?.score ?? "") }));
                               }}
                               onKeyDown={(ev) => {
                                 if (ev.key === "Enter") (ev.target as HTMLInputElement).blur();
