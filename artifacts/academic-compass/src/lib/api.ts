@@ -1,6 +1,5 @@
 /**
  * REST API client.
- * Requests go to /api/* routed through the Replit proxy to the API server.
  */
 
 const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN ?? "").replace(/\/$/, "");
