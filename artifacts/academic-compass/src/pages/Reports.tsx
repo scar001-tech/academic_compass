@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { statsForStudentExam } from "@/lib/schoolData";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { Printer, ChevronLeft, ChevronRight, School } from "lucide-react";
 
 export default function Reports() {
@@ -167,18 +166,19 @@ export default function Reports() {
            </section>
 
           {/* Chart */}
-          <section className="py-3 border-b">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Performance across subjects</div>
-            <div className="h-36 print:h-28">
-              <ResponsiveContainer>
-                <BarChart data={stats.rows.map(r => ({ subject: r.subject, score: r.score || 0 }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb"/>
-                  <XAxis dataKey="subject" stroke="#374151" fontSize={10}/>
-                  <YAxis domain={[0,100]} ticks={[0,10,20,30,40,50,60,70,80,90,100]} stroke="#374151" fontSize={10}/>
-                  <Tooltip/>
-                  <Bar dataKey="score" fill="hsl(var(--primary))" radius={[3,3,0,0]}/>
-                </BarChart>
-              </ResponsiveContainer>
+          <section className="py-1 border-b">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Performance across subjects</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+              {stats.rows.map(r => {
+                const pct = Math.max(0, Math.min(100, r.score ?? 0));
+                const color = pct >= 80 ? "text-success" : pct >= 60 ? "text-primary" : pct >= 40 ? "text-warning" : "text-destructive";
+                return (
+                  <div key={r.subjectId} className="flex items-center justify-between text-[11px]">
+                    <div className="truncate mr-2">{r.subject}</div>
+                    <div className={`font-semibold tabular-nums ${color}`}>{pct}</div>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
