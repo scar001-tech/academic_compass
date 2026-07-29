@@ -284,214 +284,36 @@ export function createMarkSheetsForExam(state: AppState, exam: Exam): { sheets: 
 const uid = (p: string, i: number) => `${p}_${i}`;
 
 function seed(): AppState {
-  const curricula: Curriculum[] = [
-    { id: "cbc", name: "CBC / Junior School", shortName: "CBC", description: "Competency-Based Curriculum", gradingScale: cbcScale },
-    { id: "844", name: "8-4-4 / Senior School", shortName: "8-4-4", description: "KCSE senior school curriculum", gradingScale: kcseScale },
-  ];
-
-  // Classes
-  const classes: SchoolClass[] = [
-    { id: "cls_cbc_g10", curriculumId: "cbc", name: "Grade 10" },
-    { id: "cls_cbc_g11", curriculumId: "cbc", name: "Grade 11" },
-    { id: "cls_cbc_g12", curriculumId: "cbc", name: "Grade 12" },
-    { id: "cls_844_f3", curriculumId: "844", name: "Form 3" },
-    { id: "cls_844_f4", curriculumId: "844", name: "Form 4" },
-  ];
-
-  // Streams
-  const streams: Stream[] = [
-    { id: "str_g10_blue", classId: "cls_cbc_g10", name: "Blue" },
-    { id: "str_g10_gold", classId: "cls_cbc_g10", name: "Gold" },
-    { id: "str_g11_blue", classId: "cls_cbc_g11", name: "Blue" },
-    { id: "str_g12_blue", classId: "cls_cbc_g12", name: "Blue" },
-    { id: "str_f3_east", classId: "cls_844_f3", name: "East" },
-    { id: "str_f3_west", classId: "cls_844_f3", name: "West" },
-    { id: "str_f4_east", classId: "cls_844_f4", name: "East" },
-  ];
-
-  // Teachers
-  const teachers: Teacher[] = [
-    { id: "t1", name: "Mrs. Achieng Otieno", email: "achieng@school.ac.ke", role: "class_teacher", curriculumIds: ["cbc"] },
-    { id: "t2", name: "Mr. Kimani Njoroge", email: "kimani@school.ac.ke", role: "subject_teacher", curriculumIds: ["cbc","844"] },
-    { id: "t3", name: "Ms. Wanjiru Kariuki", email: "wanjiru@school.ac.ke", role: "subject_teacher", curriculumIds: ["cbc"] },
-    { id: "t4", name: "Mr. Owuor Onyango", email: "owuor@school.ac.ke", role: "class_teacher", curriculumIds: ["844"] },
-    { id: "t5", name: "Mrs. Mumbi Kamau", email: "mumbi@school.ac.ke", role: "subject_teacher", curriculumIds: ["844"] },
-    { id: "t6", name: "Dr. Joseph Mwangi", email: "principal@school.ac.ke", role: "principal", curriculumIds: ["cbc","844"] },
-  ];
-
-  // Update class teachers
-  classes[0].classTeacherId = "t1";
-  classes[1].classTeacherId = "t3";
-  classes[2].classTeacherId = "t1";
-  classes[3].classTeacherId = "t4";
-  classes[4].classTeacherId = "t4";
-
-  // Subjects
-  const cbcSubjects = [
-    { name: "Mathematics", code: "MAT", teacherId: "t2" },
-    { name: "English", code: "ENG", teacherId: "t3" },
-    { name: "Kiswahili", code: "KIS", teacherId: "t1" },
-    { name: "Integrated Science", code: "SCI", teacherId: "t2" },
-    { name: "Social Studies", code: "SST", teacherId: "t3" },
-    { name: "Creative Arts", code: "CRE", teacherId: "t1" },
-  ];
-  const kcseSubjects = [
-    { name: "Mathematics", code: "MAT", teacherId: "t2" },
-    { name: "English", code: "ENG", teacherId: "t5" },
-    { name: "Kiswahili", code: "KIS", teacherId: "t5" },
-    { name: "Biology", code: "BIO", teacherId: "t2" },
-    { name: "Chemistry", code: "CHE", teacherId: "t4" },
-    { name: "Physics", code: "PHY", teacherId: "t4" },
-    { name: "Geography", code: "GEO", teacherId: "t5" },
-  ];
-  const subjects: Subject[] = [
-    ...cbcSubjects.map((s, i) => ({ id: uid("sub_cbc", i), curriculumId: "cbc" as const, ...s })),
-    ...kcseSubjects.map((s, i) => ({ id: uid("sub_844", i), curriculumId: "844" as const, ...s })),
-  ];
-
-  // Students
-  const cbcNames = [
-    ["Amani","Wekesa","F"], ["Baraka","Mutiso","M"], ["Chebet","Kipkurui","F"],
-    ["Dennis","Ochieng","M"], ["Esther","Njoki","F"], ["Faith","Akinyi","F"],
-    ["Gideon","Barasa","M"], ["Halima","Yusuf","F"], ["Ian","Kipchoge","M"], ["Jacqueline","Mwende","F"],
-  ] as const;
-  const kcseNames = [
-    ["Ibrahim","Hassan","M"], ["Jane","Wambui","F"], ["Kevin","Otieno","M"],
-    ["Lilian","Chepkoech","F"], ["Moses","Kiptoo","M"], ["Neema","Ali","F"],
-    ["Oscar","Mwenda","M"], ["Purity","Njeri","F"],
-  ] as const;
-  let sIdx = 0;
-  const students: Student[] = [];
-  cbcNames.forEach((n, i) => {
-    const classId = i < 3 ? "cls_cbc_g10" : i < 6 ? "cls_cbc_g11" : "cls_cbc_g12";
-    const streamId = classId === "cls_cbc_g10" ? (i < 2 ? "str_g10_blue" : "str_g10_gold") : classId === "cls_cbc_g11" ? "str_g11_blue" : "str_g12_blue";
-    students.push({
-      id: uid("stu", sIdx++), curriculumId: "cbc", admissionNo: `CBC/${100 + i}/26`,
-      name: `${n[0]} ${n[1]}`, gender: n[2] as "M"|"F",
-      classId, streamId,
-      vap: "Diligent learner. Participates actively in class discussions.",
-    });
-  });
-  kcseNames.forEach((n, i) => {
-    const classId = i < 5 ? "cls_844_f3" : "cls_844_f4";
-    const streamId = i < 3 ? "str_f3_east" : i < 5 ? "str_f3_west" : "str_f4_east";
-    students.push({
-      id: uid("stu", sIdx++), curriculumId: "844", admissionNo: `KCSE/${200 + i}/26`,
-      name: `${n[0]} ${n[1]}`, gender: n[2] as "M"|"F",
-      classId, streamId,
-      vap: "Responsible and consistent. Shows leadership potential.",
-    });
-  });
-
-  // Exams
-  const exams: Exam[] = [
-    { id: "ex_cbc_opener", curriculumId: "cbc", name: "Opener", term: 1, year: 2026, outOf: 100, status: "closed" },
-    { id: "ex_cbc_mid",    curriculumId: "cbc", name: "Midterm", term: 1, year: 2026, outOf: 100, status: "open" },
-    { id: "ex_cbc_end",    curriculumId: "cbc", name: "End Term", term: 1, year: 2026, outOf: 100, status: "draft" },
-    { id: "ex_844_opener", curriculumId: "844", name: "Opener", term: 1, year: 2026, outOf: 100, status: "closed" },
-    { id: "ex_844_mid",    curriculumId: "844", name: "Midterm", term: 1, year: 2026, outOf: 100, status: "open" },
-  ];
-
-  // Mark sheets: one per (subject × stream × exam) for a couple exams
-  const sheets: MarkSheet[] = [];
-  const entries: MarkEntry[] = [];
   const now = Date.now();
-  const rng = mulberry32(42);
-
-  const makeSheets = (curriculumId: CurriculumId, examIds: ID[]) => {
-    const cSubs = subjects.filter(s => s.curriculumId === curriculumId);
-    const cStudents = students.filter(s => s.curriculumId === curriculumId);
-    const cStreams = streams.filter(str => classes.find(c => c.id === str.classId)?.curriculumId === curriculumId);
-    examIds.forEach((examId, exIdx) => {
-      cStreams.forEach((str) => {
-        const cls = classes.find(c => c.id === str.classId)!;
-        cSubs.forEach((sub) => {
-          const sheetId = `sh_${examId}_${str.id}_${sub.id}`;
-          const status: SheetStatus = exIdx === 0 ? "published" : exIdx === 1 ? "submitted" : "draft";
-          sheets.push({
-            id: sheetId, curriculumId, classId: cls.id, streamId: str.id,
-            subjectId: sub.id, examId, teacherId: sub.teacherId,
-            teacherComment: exIdx === 0 ? "Overall improved performance. Keep it up." : "",
-            status, locked: status === "published", updatedAt: now - exIdx * 86400000,
-          });
-          const streamStudents = cStudents.filter(s => s.streamId === str.id);
-          streamStudents.forEach((stu, si) => {
-            const base = 40 + Math.floor(rng() * 55);
-            const subjectBias = (sub.code.charCodeAt(0) % 7) - 3;
-            const score = exIdx === 2 ? null : Math.max(15, Math.min(98, base + subjectBias + (exIdx === 1 ? 3 : 0)));
-            entries.push({
-              id: `e_${sheetId}_${stu.id}`,
-              sheetId, studentId: stu.id, score,
-              updatedAt: now - exIdx * 86400000 - si * 1000,
-              updatedBy: "Server",
-            });
-          });
-        });
-      });
-    });
-  };
-  makeSheets("cbc", ["ex_cbc_opener","ex_cbc_mid","ex_cbc_end"]);
-  makeSheets("844", ["ex_844_opener","ex_844_mid"]);
-
-  // Sample conflicts
-  const conflicts: SyncConflict[] = [
-    {
-      id: "cf1", entity: "mark",
-      studentId: students[0].id, subjectId: "sub_cbc_0", examId: "ex_cbc_mid",
-      field: "score", serverValue: "72", thisDeviceValue: "78", otherDeviceValue: "75",
-      editedBy: "Mr. Kimani Njoroge", deviceName: "Tablet-KIM-01", otherDeviceName: "Phone-KIM-02",
-      timestamp: now - 3600000, status: "pending",
-    },
-    {
-      id: "cf2", entity: "comment",
-      subjectId: "sub_cbc_1", examId: "ex_cbc_mid",
-      field: "teacherComment", serverValue: "Good progress.", thisDeviceValue: "Excellent progress in reading.",
-      editedBy: "Ms. Wanjiru Kariuki", deviceName: "Laptop-WAN",
-      timestamp: now - 7200000, status: "pending",
-    },
-    {
-      id: "cf3", entity: "remark",
-      studentId: students[10].id, examId: "ex_844_opener",
-      field: "classTeacherRemark", serverValue: "Working hard.", thisDeviceValue: "Improved discipline and academics.",
-      editedBy: "Mr. Owuor Onyango", deviceName: "Phone-OWU",
-      timestamp: now - 10800000, status: "pending",
-    },
-  ];
-
-  // Class teacher & principal remarks (samples)
-  const classRemarks: ClassTeacherRemark[] = [];
-  const principalRemarks: PrincipalRemark[] = [];
-  students.forEach((s) => {
-    exams.filter(e => e.curriculumId === s.curriculumId && e.status !== "draft").forEach((e) => {
-      classRemarks.push({
-        studentId: s.id, examId: e.id,
-        remark: "Shows consistent effort. Encouraged to seek help in weaker areas.",
-        teacherName: teachers.find(t => t.id === classes.find(c => c.id === s.classId)?.classTeacherId)?.name ?? "",
-        updatedAt: now,
-      });
-      principalRemarks.push({
-        studentId: s.id, examId: e.id,
-        remark: "A commendable performance. Aim higher next term.",
-        principalName: "Dr. Joseph Mwangi",
-        updatedAt: now,
-      });
-    });
-  });
-
   return {
     settings: {
-      schoolName: "Uhuru Academy",
-      motto: "Knowledge · Integrity · Excellence",
-      address: "P.O Box 1234-00100, Nairobi",
-      academicYear: 2026,
-      classTeacherRemarkTemplate: "Shows consistent effort. Encouraged to seek help in weaker areas.",
-      principalRemarkTemplate: "A commendable performance. Aim higher next term.",
+      schoolName: "",
+      motto: "",
+      address: "",
+      academicYear: new Date().getFullYear(),
+      classTeacherRemarkTemplate: "",
+      principalRemarkTemplate: "",
     },
-    curricula, classes, streams, subjects, teachers, students, exams,
-    sheets, entries, classRemarks, principalRemarks, conflicts,
+    curricula: [
+      { id: "cbc", name: "CBC / Junior School", shortName: "CBC", description: "Competency-Based Curriculum", gradingScale: cbcScale },
+      { id: "844", name: "8-4-4 / Senior School", shortName: "8-4-4", description: "KCSE senior school curriculum", gradingScale: kcseScale },
+    ],
+    classes: [],
+    streams: [],
+    subjects: [],
+    teachers: [],
+    students: [],
+    exams: [],
+    sheets: [],
+    entries: [],
+    classRemarks: [],
+    principalRemarks: [],
+    conflicts: [],
     timetable: [],
-    online: true, deviceName: "This Device",
-    syncQueue: [], lastSyncAt: now,
+    online: true,
+    deviceName: "This Device",
+    syncQueue: [],
+    lastSyncAt: now,
   };
 }
 
