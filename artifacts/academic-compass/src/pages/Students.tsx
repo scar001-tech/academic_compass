@@ -19,6 +19,9 @@ import {
 
 GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
+const ADMISSION_PATTERN = /^(ADM|ADMISSION|STUDENT|LEARNER|PUPIL)?[\s:\-#/]*([A-Za-z0-9\-\/]{1,20})$/i;
+const NAME_PATTERN = /^[A-Za-z][A-Za-z\s\.\'\-]{1,60}$/i;
+
 export default function Students() {
   const { state, activeCurriculum, update } = useSchool();
   const { canManageStudents } = useAuth();
@@ -89,12 +92,7 @@ export default function Students() {
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawRows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1, defval: "" });
-        rows = rawRows.map((row: any) => {
-          const cells = Array.isArray(row) ? row : [];
-          const admissionNo = String(cells[0] ?? "").trim();
-          const studentName = String(cells[1] ?? "").trim();
-          return { admissionNo, name: studentName };
-        });
+        rows = extractStudentsFromExcel(rawRows);
       } else if (name.endsWith(".pdf")) {
         const data = new Uint8Array(await file.arrayBuffer());
         const pdf = new PDFParse({ verbosity: 0 });
@@ -106,11 +104,11 @@ export default function Students() {
           const pageText = await (pdf as any).getText(i);
           text += (pageText || "") + "\n";
         }
-        rows = extractRowsFromRawText(text);
+        rows = extractStudentsFromRawText(text);
       } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
         const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
         const text = result.value || "";
-        rows = extractRowsFromRawText(text);
+        rows = extractStudentsFromRawText(text);
       } else {
         throw new Error("Unsupported file format");
       }
@@ -128,19 +126,54 @@ export default function Students() {
     }
   };
 
-  const extractRowsFromRawText = (text: string): { admissionNo: string; name: string }[] => {
+  const extractStudentsFromExcel = (rawRows: any[]): { admissionNo: string; name: string }[] => {
+    if (!rawRows.length) return [];
+
+    const firstRow = rawRows[0];
+    const isHeader = Array.isArray(firstRow) && firstRow.some((cell) => typeof cell === "string" && isNaN(Number(cell)));
+
+    if (isHeader) {
+      const header = firstRow.map((cell: any) => String(cell ?? "").trim().toLowerCase());
+      const admissionIdx = header.findIndex((h) => /admission|adm|student\s*id|learner\s*id|pupil\s*id/.test(h));
+      const nameIdx = header.findIndex((h) => /^name|full\s*name|student\s*name|learner\s*name|pupil\s*name/.test(h));
+      return rawRows.slice(1).map((row: any) => {
+        const cells = Array.isArray(row) ? row : [];
+        return {
+          admissionNo: String(cells[admissionIdx] ?? cells[0] ?? "").trim(),
+          name: String(cells[nameIdx] ?? cells[1] ?? "").trim(),
+        };
+      });
+    }
+
+    return rawRows.map((row) => {
+      const cells = Array.isArray(row) ? row : [];
+      const admissionNo = String(cells[0] ?? "").trim();
+      const studentName = String(cells[1] ?? "").trim();
+      return { admissionNo, name: studentName };
+    });
+  };
+
+  const extractStudentsFromRawText = (text: string): { admissionNo: string; name: string }[] => {
     const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
     const rows: { admissionNo: string; name: string }[] = [];
+    let pendingAdmission: string | null = null;
 
     for (const line of lines) {
-      const parts = line.split(/\s{2,}|\t/).map((p) => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        rows.push({ admissionNo: parts[0], name: parts.slice(1).join(" ") });
-      } else if (parts.length === 1) {
-        const value = parts[0];
-        const admissionMatch = value.match(/^([A-Za-z0-9\-\/]+)$/);
-        if (admissionMatch) {
-          rows.push({ admissionNo: admissionMatch[1], name: "" });
+      const admissionMatch = line.match(ADMISSION_PATTERN);
+      const nameMatch = line.match(NAME_PATTERN);
+
+      if (admissionMatch) {
+        pendingAdmission = admissionMatch[2] || admissionMatch[0];
+      }
+
+      if (nameMatch) {
+        const candidate = nameMatch[0];
+        if (pendingAdmission) {
+          rows.push({ admissionNo: pendingAdmission, name: candidate });
+          pendingAdmission = null;
+        } else if (rows.length) {
+          const last = rows[rows.length - 1];
+          if (!last.name) last.name = candidate;
         }
       }
     }
