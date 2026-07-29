@@ -121,7 +121,7 @@ export default function Reports() {
         <div className="a4-sheet print-page">
           {/* Header */}
           <header className="flex items-center gap-4 border-b pb-4">
-            <img src="/school_logo.jpg" alt="School logo" className="h-16 w-16 rounded-lg object-contain shrink-0"/>
+            <img src="/school_logo.jpg" alt="School logo" className="h-20 w-20 rounded-lg object-contain shrink-0"/>
             <div className="flex-1 min-w-0">
               <input className="inline-edit text-2xl font-bold tracking-tight w-full"
                 value={state.settings.schoolName} disabled={!isPrincipal}
