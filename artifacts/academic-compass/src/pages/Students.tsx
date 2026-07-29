@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Plus, Trash2, Lock, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
 
 export default function Students() {
   const { state, activeCurriculum, update } = useSchool();
@@ -68,63 +70,114 @@ export default function Students() {
     toast.success(`Exported ${data.length} students`);
   };
 
-  const importStudents = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importStudents = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+    const name = file.name.toLowerCase();
+    try {
+      let rows: { AdmissionNo?: string; Name?: string; admissionNo?: string; name?: string; StudentName?: string; full_name?: string }[] = [];
+      if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        const data = new Uint8Array(await file.arrayBuffer());
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<any>(sheet);
-        if (!Array.isArray(json) || json.length === 0) throw new Error("Invalid format");
-        update((s) => {
-          json.forEach((row) => {
-            const name = String(row.Name || row.StudentName || "New Student");
-            const admissionNo = String(row.AdmissionNo || row.Admission || `IMP/${Date.now()}/${s.settings.academicYear}`);
-            const gender = ["M", "F"].includes(String(row.Gender)) ? String(row.Gender) : "M";
-            const className = String(row.Class || "");
-            const streamName = String(row.Stream || "");
-            const vap = String(row.VAP || row.vap || "");
-            let classId = classFilter !== "all" ? classFilter : (classes[0]?.id || "");
-            let streamId = "";
-            if (className) {
-              const foundClass = s.classes.find(c => c.name.toLowerCase() === className.toLowerCase() && c.curriculumId === activeCurriculum);
-              if (foundClass) classId = foundClass.id;
+        rows = XLSX.utils.sheet_to_json<any>(sheet);
+      } else if (name.endsWith(".pdf")) {
+        const data = new Uint8Array(await file.arrayBuffer());
+        const pdf = new PDFParse({ verbosity: 0 });
+        await (pdf as any).load(data.buffer);
+        const info = await (pdf as any).getInfo();
+        const numPages = info?.numPages ?? 0;
+        let text = "";
+        for (let i = 1; i <= numPages; i++) {
+          const pageText = await (pdf as any).getText(i);
+          text += (pageText || "") + "\n";
+        }
+        const lines = text.split("\n").map((l: string) => l.trim()).filter(Boolean);
+        const parsed: any[] = [];
+        let current: any = {};
+        for (const line of lines) {
+          const admissionMatch = line.match(/admission\s*(?:no|number|#)[:\s]+([A-Za-z0-9\-\/]+)/i);
+          const nameMatch = line.match(/name[:\s]+([A-Za-z0-9\s\-\.]+)/i);
+          if (admissionMatch) current.AdmissionNo = admissionMatch[1].trim();
+          if (nameMatch) current.Name = nameMatch[1].trim();
+          if (current.AdmissionNo && current.Name) {
+            parsed.push(current);
+            current = {};
+          }
+        }
+        if (parsed.length === 0 && lines.length >= 2) {
+          for (const line of lines) {
+            const parts = line.split(/\s{2,}|\t/);
+            if (parts.length >= 2) {
+              parsed.push({ AdmissionNo: parts[0].trim(), Name: parts.slice(1).join(" ").trim() });
             }
-            if (streamName && classId) {
-              const foundStream = s.streams.find(st => st.classId === classId && st.name.toLowerCase() === streamName.toLowerCase());
-              if (foundStream) streamId = foundStream.id;
+          }
+        }
+        rows = parsed;
+      } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
+        const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        const text = result.value || "";
+        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+        const parsed: any[] = [];
+        let current: any = {};
+        for (const line of lines) {
+          const admissionMatch = line.match(/admission\s*(?:no|number|#)[:\s]+([A-Za-z0-9\-\/]+)/i);
+          const nameMatch = line.match(/name[:\s]+([A-Za-z0-9\s\-\.]+)/i);
+          if (admissionMatch) current.AdmissionNo = admissionMatch[1].trim();
+          if (nameMatch) current.Name = nameMatch[1].trim();
+          if (current.AdmissionNo && current.Name) {
+            parsed.push(current);
+            current = {};
+          }
+        }
+        if (parsed.length === 0 && lines.length >= 2) {
+          for (const line of lines) {
+            const parts = line.split(/\s{2,}|\t/);
+            if (parts.length >= 2) {
+              parsed.push({ AdmissionNo: parts[0].trim(), Name: parts.slice(1).join(" ").trim() });
             }
-            if (!streamId && classId) {
-              const fallback = s.streams.find(st => st.classId === classId);
-              if (fallback) streamId = fallback.id;
-            }
-            if (streamFilter !== "all" && !streamId) {
-              const filtered = s.streams.find(st => st.id === streamFilter);
-              if (filtered) streamId = filtered.id;
-            }
-            s.students.push({
-              id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-              curriculumId: activeCurriculum,
-              admissionNo,
-              name,
-              gender: gender as "M" | "F",
-              classId,
-              streamId,
-              vap,
-            });
+          }
+        }
+        rows = parsed;
+      } else {
+        throw new Error("Unsupported file format");
+      }
+
+      if (!Array.isArray(rows) || rows.length === 0) throw new Error("No students found in file");
+
+      update((s) => {
+        rows.forEach((row) => {
+          const admissionNo = String(row.AdmissionNo || row.admissionNo || row.StudentName || row.full_name || `IMP/${Date.now()}/${s.settings.academicYear}`);
+          const name = String(row.Name || row.name || row.StudentName || row.full_name || "New Student");
+          let classId = classFilter !== "all" ? classFilter : (classes[0]?.id || "");
+          let streamId = "";
+          if (classId) {
+            const fallback = s.streams.find(st => st.classId === classId);
+            if (fallback) streamId = fallback.id;
+          }
+          if (streamFilter !== "all") {
+            const filtered = s.streams.find(st => st.id === streamFilter);
+            if (filtered) streamId = filtered.id;
+          }
+          s.students.push({
+            id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            curriculumId: activeCurriculum,
+            admissionNo,
+            name,
+            gender: "M",
+            classId,
+            streamId,
+            vap: "",
           });
         });
-        toast.success(`Imported ${json.length} students from Excel`);
-      } catch {
-        toast.error("Failed to import students. Please upload a valid Excel (.xlsx) file.");
-      } finally {
-        if (fileRef.current) fileRef.current.value = "";
-      }
-    };
-    reader.readAsArrayBuffer(file);
+      });
+      toast.success(`Imported ${rows.length} students`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to import students";
+      toast.error(message);
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   return (
@@ -159,6 +212,14 @@ export default function Students() {
             {streams.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        {canManageStudents && (
+          <>
+            <Button variant="outline" onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-1"/>Import
+            </Button>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.pdf,.doc,.docx" className="hidden" onChange={importStudents} />
+          </>
+        )}
         <Badge variant="secondary" className="ml-auto self-center">{students.length} students</Badge>
       </div>
 
