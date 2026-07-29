@@ -52,7 +52,7 @@ export default function Auth() {
     e.preventDefault();
     setForgotBusy(true);
     try {
-      const res = await fetch("/api/forgot-password", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail, newPassword: forgotPassword }),
