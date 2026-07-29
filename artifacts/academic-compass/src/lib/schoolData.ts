@@ -232,6 +232,53 @@ export function gradeFor(score: number | null | undefined, scale: GradeBand[]): 
   return scale.find((b) => score >= b.min && score <= b.max) ?? null;
 }
 
+export function createMarkSheetsForExam(state: AppState, exam: Exam): { sheets: MarkSheet[]; entries: MarkEntry[] } {
+  const sheets: MarkSheet[] = [];
+  const entries: MarkEntry[] = [];
+  const now = Date.now();
+
+  const curriculumSubjects = state.subjects.filter(s => s.curriculumId === exam.curriculumId);
+  const curriculumStreams = state.streams.filter(str => {
+    const cls = state.classes.find(c => c.id === str.classId);
+    return cls?.curriculumId === exam.curriculumId;
+  });
+  const curriculumStudents = state.students.filter(s => s.curriculumId === exam.curriculumId);
+
+  curriculumStreams.forEach((stream) => {
+    const cls = state.classes.find(c => c.id === stream.classId);
+    if (!cls) return;
+    curriculumSubjects.forEach((subject) => {
+      const sheetId = `sh_${exam.id}_${stream.id}_${subject.id}`;
+      sheets.push({
+        id: sheetId,
+        curriculumId: exam.curriculumId,
+        classId: cls.id,
+        streamId: stream.id,
+        subjectId: subject.id,
+        examId: exam.id,
+        teacherId: subject.teacherId,
+        status: "draft",
+        locked: false,
+        updatedAt: now,
+      });
+
+      const streamStudents = curriculumStudents.filter(s => s.streamId === stream.id);
+      streamStudents.forEach((stu) => {
+        entries.push({
+          id: `e_${sheetId}_${stu.id}`,
+          sheetId,
+          studentId: stu.id,
+          score: null,
+          updatedAt: now,
+          updatedBy: state.deviceName,
+        });
+      });
+    });
+  });
+
+  return { sheets, entries };
+}
+
 // ---------- Seed ----------
 
 const uid = (p: string, i: number) => `${p}_${i}`;

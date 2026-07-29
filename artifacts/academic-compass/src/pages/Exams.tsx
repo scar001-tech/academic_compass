@@ -6,6 +6,7 @@ import { Plus, Trash2, Download, Upload } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { createMarkSheetsForExam } from "@/lib/schoolData";
 
 export default function Exams() {
   const { state, activeCurriculum, update } = useSchool();
@@ -13,10 +14,15 @@ export default function Exams() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const add = () => update(s => {
-    s.exams.push({
-      id: `ex_${Date.now()}`, curriculumId: activeCurriculum, name: "New Exam",
-      term: 1, year: s.settings.academicYear, outOf: 100, status: "draft",
-    });
+    const id = `ex_${Date.now()}`;
+    const exam = {
+      id, curriculumId: activeCurriculum, name: "New Exam",
+      term: 1 as 1 | 2 | 3, year: s.settings.academicYear, outOf: 100, status: "draft" as const,
+    };
+    s.exams.push(exam);
+    const { sheets, entries } = createMarkSheetsForExam(s, exam);
+    s.sheets.push(...sheets);
+    s.entries.push(...entries);
   });
 
   const exportExams = () => {
