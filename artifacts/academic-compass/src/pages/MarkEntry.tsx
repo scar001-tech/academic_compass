@@ -234,6 +234,8 @@ export default function MarkEntry() {
                 {students.map((stu, i) => {
                   const e  = entries.find(x => x.studentId === stu.id);
                   const gb = gradeFor(e?.score ?? null, curriculum.gradingScale);
+                  const [draft, setDraft] = useState<string>(String(e?.score ?? ""));
+                  useEffect(() => { setDraft(String(e?.score ?? "")); }, [e?.score]);
                   return (
                     <tr key={stu.id}>
                       <td className="text-muted-foreground">{i+1}</td>
@@ -244,7 +246,8 @@ export default function MarkEntry() {
                           type="number" min={0} max={100}
                           className="h-9 w-24"
                           disabled={sheet.locked || !canEnterMarks}
-                          value={e?.score ?? ""}
+                          value={draft}
+                          onChange={(ev) => setDraft(ev.target.value)}
                           onBlur={(ev) => changeScore(stu.id, sheet.subjectId, ev.target.value)}
                           onKeyDown={(ev) => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); }}
                         />

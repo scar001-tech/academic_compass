@@ -283,7 +283,7 @@ export default function Marks() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((stu, i) => {
+                 {students.map((stu, i) => {
                   const stats = studentStats[stu.id];
                   return (
                     <tr key={stu.id}>
@@ -292,13 +292,16 @@ export default function Marks() {
                       <td className="font-medium">{stu.name}</td>
                       {subjects.map(sub => {
                         const cell = matrix[stu.id]?.[sub.id];
+                        const [draft, setDraft] = useState<string>(String(cell?.score ?? ""));
+                        useEffect(() => { setDraft(String(cell?.score ?? "")); }, [cell?.score]);
                         return (
                           <td key={sub.id} className="text-center">
                             <Input
                               type="number"
                               className="h-8 w-16 text-center mx-auto"
                               disabled={!canEnterMarks}
-                              value={cell?.score ?? ""}
+                              value={draft}
+                              onChange={(ev) => setDraft(ev.target.value)}
                               onBlur={(ev) => {
                                 changeScore(stu.id, sub.id, ev.target.value);
                               }}
