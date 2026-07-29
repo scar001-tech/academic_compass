@@ -87,6 +87,7 @@ interface DataStore {
   setApproval(userId: string, approved: boolean): Promise<void>;
   assignRole(userId: string, role: AppRole, action: "add" | "remove"): Promise<void>;
   deleteProfile(userId: string): Promise<void>;
+  updatePassword(userId: string, passwordHash: string): Promise<void>;
   listMarkEntries(): Promise<MarkEntryRow[]>;
   upsertMarkEntry(input: {
     id: string;
@@ -306,6 +307,9 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
       sqliteDb.prepare("DELETE FROM ac_user_roles WHERE user_id = ?").run(userId);
       sqliteDb.prepare("DELETE FROM ac_profiles WHERE id = ?").run(userId);
     },
+    async updatePassword(userId, passwordHash) {
+      sqliteDb.prepare("UPDATE ac_profiles SET password_hash = ? WHERE id = ?").run(passwordHash, userId);
+    },
     async listMarkEntries() {
       return sqliteDb.prepare("SELECT * FROM ac_mark_entries").all().map(markFromRow);
     },
@@ -431,6 +435,9 @@ async function createPostgresStore(): Promise<DataStore> {
     },
     async deleteProfile(userId) {
       await db.delete(profiles).where(eq(profiles.id, userId));
+    },
+    async updatePassword(userId, passwordHash) {
+      await db.update(profiles).set({ passwordHash }).where(eq(profiles.id, userId));
     },
     async listMarkEntries() {
       return db.select().from(markEntries);

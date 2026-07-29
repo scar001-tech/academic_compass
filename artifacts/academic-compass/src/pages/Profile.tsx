@@ -5,11 +5,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
   User as UserIcon, Shield, Mail, Calendar, CheckCircle2, XCircle,
-  Crown, Users, Clock, Briefcase, Download,
+  Crown, Users, Clock, Briefcase, Download, KeyRound,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -34,6 +37,13 @@ export default function Profile() {
   const { state } = useSchool();
   const [profiles, setProfiles]           = useState<ProfileItem[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<ProfileItem | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
   const isAuthenticator = canManageStaff;
 
   const fetchProfiles = async () => {
@@ -112,6 +122,41 @@ export default function Profile() {
     toast.success("Staff list exported as Excel");
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordBusy(true);
+    try {
+      await api.post("/auth/change-password", { currentPassword, newPassword });
+      toast.success("Password changed successfully");
+      setChangeOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to change password.";
+      toast.error(msg);
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
+  const handleAdminReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setPasswordBusy(true);
+    try {
+      await api.post("/auth/admin-reset-password", { userId: resetTarget.id, newPassword: resetNewPassword });
+      toast.success(`Password reset for ${resetTarget.full_name || resetTarget.email}`);
+      setResetOpen(false);
+      setResetTarget(null);
+      setResetNewPassword("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to reset password.";
+      toast.error(msg);
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="My Profile" description="View your profile details and role assignments." />
@@ -149,6 +194,9 @@ export default function Profile() {
                 <span className="font-semibold text-warning-foreground flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Pending</span>
               )}
             </div>
+            <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setChangeOpen(true)}>
+              <KeyRound className="h-3.5 w-3.5 mr-1" /> Change Password
+            </Button>
           </div>
         </Card>
 
@@ -232,13 +280,14 @@ export default function Profile() {
                   {ALL_ROLES.map((role) => (
                     <th key={role.value} className="px-3 md:px-6 py-3 text-center">{role.label}</th>
                   ))}
+                  {isAuthenticator && <th className="px-3 md:px-6 py-3 text-center">Password</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {loadingProfiles ? (
-                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 5} className="px-4 md:px-6 py-10 text-center text-muted-foreground">Loading registered staff profiles...</td></tr>
                 ) : profiles.length === 0 ? (
-                  <tr><td colSpan={ALL_ROLES.length + 4} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
+                  <tr><td colSpan={ALL_ROLES.length + 5} className="px-4 md:px-6 py-10 text-center text-muted-foreground">No staff profiles registered.</td></tr>
                 ) : profiles.map((p) => {
                   const isPrincipalRow = p.roles.includes("admin") || p.roles.includes("principal");
                   const isLocal = p.isLocal;
@@ -272,6 +321,13 @@ export default function Profile() {
                           </td>
                         );
                       })}
+                      {isAuthenticator && !isPrincipalRow && (
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                          <Button variant="ghost" size="sm" onClick={() => { setResetTarget(p); setResetOpen(true); }}>
+                            <KeyRound className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -280,6 +336,56 @@ export default function Profile() {
           </div>
         </Card>
       )}
+
+      {/* Change Password Dialog */}
+      <Dialog open={changeOpen} onOpenChange={setChangeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" /> Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Update your account password. You must know your current password to proceed.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required disabled={passwordBusy} />
+            </div>
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} disabled={passwordBusy} />
+            </div>
+            <Button type="submit" className="w-full" disabled={passwordBusy}>
+              {passwordBusy ? "Updating..." : "Change Password"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Reset Password Dialog */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" /> Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for {resetTarget?.full_name || resetTarget?.email}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAdminReset} className="space-y-4">
+            <div>
+              <Label htmlFor="reset-new-password">New Password</Label>
+              <Input id="reset-new-password" type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={6} disabled={passwordBusy} />
+            </div>
+            <Button type="submit" className="w-full" disabled={passwordBusy}>
+              {passwordBusy ? "Resetting..." : "Reset Password"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

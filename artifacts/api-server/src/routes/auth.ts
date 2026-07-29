@@ -45,6 +45,21 @@ const assignRoleSchema = z.object({
   action: z.enum(["add", "remove"]),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const adminResetPasswordSchema = z.object({
+  userId: z.string().min(1),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email().trim().toLowerCase(),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 const createStaffSchema = z.object({
   email: z.string().email().trim().toLowerCase(),
   full_name: z.string().trim().min(1).max(120).optional(),
@@ -285,6 +300,59 @@ router.delete("/profiles/:id", authenticateJWT, requireRoles("admin", "principal
     return res.json({ ok: true });
   } catch (err) {
     console.error("[delete-profile]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/change-password", authenticateJWT, async (req: any, res) => {
+  try {
+    const parsed = changePasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const { currentPassword, newPassword } = parsed.data;
+    const store = await getStore();
+    const profile = await store.getProfileById(req.userId);
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    const ok = await bcrypt.compare(currentPassword, profile.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Current password is incorrect" });
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await store.updatePassword(req.userId, newHash);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[change-password]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/admin-reset-password", authenticateJWT, requireRoles("admin", "principal"), async (req: any, res) => {
+  try {
+    const parsed = adminResetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const { userId, newPassword } = parsed.data;
+    const store = await getStore();
+    const profile = await store.getProfileById(userId);
+    if (!profile) return res.status(404).json({ message: "Profile not found" });
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await store.updatePassword(userId, newHash);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("[admin-reset-password]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const { email, newPassword } = parsed.data;
+    const store = await getStore();
+    const profile = await store.getProfileByEmail(email);
+    if (!profile) return res.status(404).json({ message: "No account found with that email address" });
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await store.updatePassword(profile.id, newHash);
+    return res.json({ ok: true, message: "Password has been reset successfully. You can now sign in with your new password." });
+  } catch (err) {
+    console.error("[forgot-password]", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { School } from "lucide-react";
+import { School, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/store/auth";
 import { DEPARTMENTS } from "@/lib/schoolData";
@@ -17,6 +19,10 @@ export default function Auth() {
   const [name, setName]             = useState("");
   const [department, setDepartment] = useState<string>("");
   const [busy, setBusy]             = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotPassword, setForgotPassword] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
   const nav = useNavigate();
   const { session, loading, signIn, signUp } = useAuth();
 
@@ -39,6 +45,29 @@ export default function Auth() {
       toast.error(message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotBusy(true);
+    try {
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail, newPassword: forgotPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to reset password");
+      toast.success(data.message || "Password reset successfully");
+      setForgotOpen(false);
+      setForgotEmail("");
+      setForgotPassword("");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to reset password";
+      toast.error(message);
+    } finally {
+      setForgotBusy(false);
     }
   };
 
@@ -113,6 +142,60 @@ export default function Auth() {
             {mode === "signin" ? "Create one" : "Sign in"}
           </button>
         </div>
+
+        {mode === "signin" && (
+          <p className="text-center text-gray-600 text-sm mt-3">
+            <button
+              type="button"
+              className="text-blue-900 hover:underline inline-flex items-center gap-1"
+              onClick={() => setForgotOpen(true)}
+            >
+              <KeyRound className="h-3.5 w-3.5" /> Forgot password?
+            </button>
+          </p>
+        )}
+
+        <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5" /> Reset Password
+              </DialogTitle>
+              <DialogDescription>
+                Enter your registered email address and choose a new password.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <Label htmlFor="forgot-email">Email Address</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                  disabled={forgotBusy}
+                />
+              </div>
+              <div>
+                <Label htmlFor="forgot-password">New Password</Label>
+                <Input
+                  id="forgot-password"
+                  type="password"
+                  value={forgotPassword}
+                  onChange={(e) => setForgotPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  disabled={forgotBusy}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={forgotBusy}>
+                {forgotBusy ? "Resetting..." : "Reset Password"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         <p className="mt-3 text-[11px] text-muted-foreground text-center">
           The first account created becomes Principal (full access). Every other
           account needs Principal approval before it can access the system.
