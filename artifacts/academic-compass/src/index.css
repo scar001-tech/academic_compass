@@ -286,7 +286,76 @@
   }
 
   .a4-sheet {
-    @apply mx-auto bg-card border rounded-lg shadow-sm p-8 max-w-[820px] space-y-1;
+    @apply mx-auto bg-card border rounded-lg shadow-sm p-6 max-w-[780px] text-sm;
+  }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    html, body {
+      background: #fff !important;
+      font-size: 11px;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    body * {
+      visibility: hidden;
+    }
+
+    .print-page,
+    .print-page * {
+      visibility: visible;
+    }
+
+    .print-page {
+      position: absolute;
+      inset: 0;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      box-shadow: none !important;
+      border: none !important;
+      max-width: none;
+      padding: 0 !important;
+    }
+
+    .print-page table {
+      break-inside: avoid;
+      font-size: 10px;
+    }
+
+    .print-page input,
+    .print-page textarea {
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      font-size: inherit;
+    }
+
+    .print-page header {
+      padding-bottom: 6px !important;
+      margin-bottom: 6px !important;
+    }
+
+    .print-page section {
+      padding-top: 6px !important;
+      padding-bottom: 6px !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    .print-page .h-36,
+    .print-page .h-48 {
+      height: 100px !important;
+    }
   }
 
   .auth-bg {

@@ -140,72 +140,72 @@ export default function Reports() {
             </div>
           </header>
 
-          {/* Student info */}
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-3 py-3 text-sm border-b">
-            <Field label="Student name" value={student.name} disabled={!canManageStudents}
-              onChange={(v) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.name = v; })}/>
-            <Field label="Admission No." value={student.admissionNo} disabled={!canManageStudents}
-              onChange={(v) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.admissionNo = v; })}/>
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground">Grade · Stream</div>
-              <div className="font-medium">{cls?.name} · {str?.name}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-muted-foreground">Mean · Grade</div>
-              <div className="font-semibold">{stats.mean} · {stats.overallGrade}</div>
-            </div>
-            <div className="col-span-2 md:col-span-4">
-              <div className="text-[10px] uppercase text-muted-foreground">Values · Attitudes · Personality (VAP)</div>
-              <input className="inline-edit w-full" value={student.vap} disabled={!canManageStudents}
-                onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.vap = e.target.value; })}/>
-            </div>
-            <div className="col-span-2 md:col-span-4">
-              <div className="text-[10px] uppercase text-muted-foreground">School Fee Balance</div>
-              <input className="inline-edit w-full" value={student.feeBalance ?? ""} disabled={!canManageStudents}
-                onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.feeBalance = e.target.value ? Number(e.target.value) : undefined; })}/>
-            </div>
-          </section>
+           {/* Student info */}
+           <section className="grid grid-cols-2 md:grid-cols-4 gap-2 py-2 text-sm border-b">
+             <Field label="Student name" value={student.name} disabled={!canManageStudents}
+               onChange={(v) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.name = v; })}/>
+             <Field label="Admission No." value={student.admissionNo} disabled={!canManageStudents}
+               onChange={(v) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.admissionNo = v; })}/>
+             <div>
+               <div className="text-[10px] uppercase text-muted-foreground">Grade · Stream</div>
+               <div className="font-medium">{cls?.name} · {str?.name}</div>
+             </div>
+             <div>
+               <div className="text-[10px] uppercase text-muted-foreground">Mean · Grade</div>
+               <div className="font-semibold">{stats.mean} · {stats.overallGrade}</div>
+             </div>
+             <div className="col-span-2 md:col-span-4">
+               <div className="text-[10px] uppercase text-muted-foreground">Values · Attitudes · Personality (VAP)</div>
+               <input className="inline-edit w-full" value={student.vap} disabled={!canManageStudents}
+                 onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.vap = e.target.value; })}/>
+             </div>
+             <div className="col-span-2 md:col-span-4">
+               <div className="text-[10px] uppercase text-muted-foreground">School Fee Balance</div>
+               <input className="inline-edit w-full" value={student.feeBalance ?? ""} disabled={!canManageStudents}
+                 onChange={(e) => update(s => { const x = s.students.find(x => x.id === student.id); if (x) x.feeBalance = e.target.value ? Number(e.target.value) : undefined; })}/>
+             </div>
+           </section>
 
           {/* Chart */}
-          <section className="py-4 border-b">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Performance across subjects</div>
-            <div className="h-48">
+          <section className="py-3 border-b">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Performance across subjects</div>
+            <div className="h-36 print:h-28">
               <ResponsiveContainer>
                 <BarChart data={stats.rows.map(r => ({ subject: r.subject, score: r.score || 0 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb"/>
-                  <XAxis dataKey="subject" stroke="#374151" fontSize={11}/>
-                  <YAxis domain={[0,100]} stroke="#374151" fontSize={11}/>
+                  <XAxis dataKey="subject" stroke="#374151" fontSize={10}/>
+                  <YAxis domain={[0,100]} stroke="#374151" fontSize={10}/>
                   <Tooltip/>
-                  <Bar dataKey="score" fill="hsl(var(--primary))" radius={[4,4,0,0]}/>
+                  <Bar dataKey="score" fill="hsl(var(--primary))" radius={[3,3,0,0]}/>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </section>
 
           {/* Subject results */}
-          <section className="py-4 border-b overflow-x-auto">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Subject results</div>
+          <section className="py-3 border-b overflow-x-auto">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Subject results</div>
             <table className="w-full text-xs border min-w-[640px]">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="text-left p-2 border">Subject</th>
-                  <th className="text-left p-2 border w-14">Marks</th>
-                  <th className="text-left p-2 border w-16">Dev.</th>
-                  <th className="text-left p-2 border w-14">Grade</th>
-                  <th className="text-left p-2 border w-20">Rank</th>
-                  <th className="text-left p-2 border">Comment</th>
-                  <th className="text-left p-2 border w-40">Teacher</th>
+                  <th className="text-left p-1.5 border">Subject</th>
+                  <th className="text-left p-1.5 border w-12">Marks</th>
+                  <th className="text-left p-1.5 border w-14">Dev.</th>
+                  <th className="text-left p-1.5 border w-12">Grade</th>
+                  <th className="text-left p-1.5 border w-16">Rank</th>
+                  <th className="text-left p-1.5 border">Comment</th>
+                  <th className="text-left p-1.5 border w-32">Teacher</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.rows.map(r => (
                   <tr key={r.subjectId}>
-                    <td className="p-2 border font-medium">{r.subject}</td>
-                    <td className="p-2 border">
+                    <td className="p-1.5 border font-medium">{r.subject}</td>
+                    <td className="p-1.5 border">
                       {canEditMarks ? (
                         <input
                           type="number"
-                          className="inline-edit w-16 text-center"
+                          className="inline-edit w-14 text-center"
                           defaultValue={r.score ?? ""}
                           disabled={!canEditMarks}
                           onBlur={(e) => {
@@ -223,12 +223,12 @@ export default function Reports() {
                         r.score ?? "—"
                       )}
                     </td>
-                    <td className={`p-2 border ${r.deviation > 0 ? "text-success" : r.deviation < 0 ? "text-destructive" : ""}`}>
+                    <td className={`p-1.5 border ${r.deviation > 0 ? "text-success" : r.deviation < 0 ? "text-destructive" : ""}`}>
                       {r.deviation > 0 ? "+" : ""}{r.deviation}
                     </td>
-                    <td className="p-2 border">{r.grade}</td>
-                    <td className="p-2 border">{r.rank || "—"}/{r.total}</td>
-                    <td className="p-2 border">
+                    <td className="p-1.5 border">{r.grade}</td>
+                    <td className="p-1.5 border">{r.rank || "—"}/{r.total}</td>
+                    <td className="p-1.5 border">
                       <input className="inline-edit w-full text-xs" defaultValue={r.teacherComment}
                         disabled={!canComment}
                         onBlur={(e) => update(s => {
@@ -236,7 +236,7 @@ export default function Reports() {
                           if (sh) sh.teacherComment = e.target.value;
                         })}/>
                     </td>
-                    <td className="p-2 border text-muted-foreground">{r.teacherName}</td>
+                    <td className="p-1.5 border text-muted-foreground">{r.teacherName}</td>
                   </tr>
                 ))}
               </tbody>
@@ -244,18 +244,18 @@ export default function Reports() {
           </section>
 
           {/* Class teacher remarks */}
-          <section className="py-3 border-b">
+          <section className="py-2 border-b">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Class teacher's remarks</div>
-            <Textarea className="text-sm min-h-[60px]" defaultValue={classRemark?.remark || state.settings.classTeacherRemarkTemplate}
+            <Textarea className="text-sm min-h-[50px] print:min-h-[40px]" defaultValue={classRemark?.remark || state.settings.classTeacherRemarkTemplate}
               disabled={!canComment}
               onBlur={updateClassRemark}/>
             <div className="text-xs text-muted-foreground mt-1">Signed: {classTeacher?.name || "—"} · Date: {new Date().toLocaleDateString()}</div>
           </section>
 
           {/* Principal remarks */}
-          <section className="py-3">
+          <section className="py-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Principal's remarks</div>
-            <Textarea className="text-sm min-h-[60px]" defaultValue={principalRemark?.remark || state.settings.principalRemarkTemplate}
+            <Textarea className="text-sm min-h-[50px] print:min-h-[40px]" defaultValue={principalRemark?.remark || state.settings.principalRemarkTemplate}
               disabled={!isPrincipal}
               onBlur={updatePrincipalRemark}/>
             <div className="text-xs text-muted-foreground mt-1">
