@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Students() {
   const { state, activeCurriculum, update } = useSchool();
@@ -20,6 +23,7 @@ export default function Students() {
   const [classFilter, setClassFilter] = useState<string>("all");
   const [streamFilter, setStreamFilter] = useState<string>("all");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<{ admissionNo: string; name: string }[] | null>(null);
   const classes = state.classes.filter(c => c.curriculumId === activeCurriculum);
   const streams = state.streams.filter(s => classFilter === "all" || s.classId === classFilter);
   const students = state.students.filter(s => s.curriculumId === activeCurriculum)
@@ -145,39 +149,51 @@ export default function Students() {
 
       if (!Array.isArray(rows) || rows.length === 0) throw new Error("No students found in file");
 
-      update((s) => {
-        rows.forEach((row) => {
-          const admissionNo = String(row.AdmissionNo || row.admissionNo || row.StudentName || row.full_name || `IMP/${Date.now()}/${s.settings.academicYear}`);
-          const name = String(row.Name || row.name || row.StudentName || row.full_name || "New Student");
-          let classId = classFilter !== "all" ? classFilter : (classes[0]?.id || "");
-          let streamId = "";
-          if (classId) {
-            const fallback = s.streams.find(st => st.classId === classId);
-            if (fallback) streamId = fallback.id;
-          }
-          if (streamFilter !== "all") {
-            const filtered = s.streams.find(st => st.id === streamFilter);
-            if (filtered) streamId = filtered.id;
-          }
-          s.students.push({
-            id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            curriculumId: activeCurriculum,
-            admissionNo,
-            name,
-            gender: "M",
-            classId,
-            streamId,
-            vap: "",
-          });
-        });
-      });
-      toast.success(`Imported ${rows.length} students`);
+      const parsed = rows.map((row) => {
+        const admissionNo = String(row.AdmissionNo || row.admissionNo || row.StudentName || row.full_name || "").trim();
+        const name = String(row.Name || row.name || row.StudentName || row.full_name || "").trim();
+        return { admissionNo, name };
+      }).filter((row) => row.admissionNo || row.name);
+
+      if (parsed.length === 0) throw new Error("No students found in file");
+
+      setPreview(parsed);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to import students";
       toast.error(message);
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  const confirmImport = () => {
+    if (!preview) return;
+    update((s) => {
+      preview.forEach((row) => {
+        let classId = classFilter !== "all" ? classFilter : (classes[0]?.id || "");
+        let streamId = "";
+        if (classId) {
+          const fallback = s.streams.find(st => st.classId === classId);
+          if (fallback) streamId = fallback.id;
+        }
+        if (streamFilter !== "all") {
+          const filtered = s.streams.find(st => st.id === streamFilter);
+          if (filtered) streamId = filtered.id;
+        }
+        s.students.push({
+          id: `stu_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          curriculumId: activeCurriculum,
+          admissionNo: row.admissionNo || `IMP/${Date.now()}/${s.settings.academicYear}`,
+          name: row.name || "New Student",
+          gender: "M",
+          classId,
+          streamId,
+          vap: "",
+        });
+      });
+    });
+    toast.success(`Imported ${preview.length} students`);
+    setPreview(null);
   };
 
   return (
@@ -285,6 +301,39 @@ export default function Students() {
           </tbody>
         </table>
       </Card>
+
+      <Dialog open={!!preview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Import</DialogTitle>
+            <DialogDescription>Review the students to be imported. Admission number and name are taken directly from the file.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left p-2 border">#</th>
+                  <th className="text-left p-2 border">Admission No.</th>
+                  <th className="text-left p-2 border">Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview?.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="p-2 border text-muted-foreground">{idx + 1}</td>
+                    <td className="p-2 border font-mono">{row.admissionNo || "—"}</td>
+                    <td className="p-2 border font-medium">{row.name || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)}>Cancel</Button>
+            <Button onClick={confirmImport}>Confirm Import</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
