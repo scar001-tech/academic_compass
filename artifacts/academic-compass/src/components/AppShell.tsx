@@ -153,7 +153,7 @@ export default function AppShell() {
   );
 
   return (
-    <div className="min-h-screen text-foreground flex flex-col bg-background">
+    <div className="min-h-screen text-foreground flex flex-col bg-background overflow-x-hidden">
       {/* Header with key quick links */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b no-print">
         <div className="px-4 lg:px-6">
