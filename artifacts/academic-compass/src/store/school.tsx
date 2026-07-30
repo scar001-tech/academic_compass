@@ -248,7 +248,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     if (!localStorage.getItem("ac_token")) return;
     const onFocus = () => { if (navigator.onLine) syncNow(); };
     window.addEventListener("focus", onFocus);
-    const interval = setInterval(() => { if (navigator.onLine) syncNow(); }, 10000);
+    const interval = setInterval(() => { if (navigator.onLine) syncNow(); }, 30000);
     return () => {
       window.removeEventListener("focus", onFocus);
       clearInterval(interval);
