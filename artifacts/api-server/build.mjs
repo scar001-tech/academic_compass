@@ -102,8 +102,7 @@ async function buildAll() {
       "electron",
       "dotenv",
       "pg",
-      "drizzle-orm/node-postgres",
-      "@workspace/db",
+
     ],
     sourcemap: "linked",
     plugins: [

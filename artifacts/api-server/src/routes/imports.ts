@@ -34,7 +34,7 @@ router.post("/marks", authenticateJWT, requireRoles("admin", "principal", "senio
     if (!snapshot) return res.status(400).json({ message: "School data not initialized" });
     const schoolData = JSON.parse(snapshot.data) as any;
 
-    const sheet = (schoolData.sheets || []).find((s: any) => s.id === sheetId);
+    const sheet = (schoolData.sheets || []).find((s: any) => s.id === sheetId) as any;
     if (!sheet) return res.status(404).json({ message: "Mark sheet not found" });
 
     const allStudents = schoolData.students || [];
@@ -48,7 +48,7 @@ router.post("/marks", authenticateJWT, requireRoles("admin", "principal", "senio
       const admissionNo = String(r.admissionNo || r.admission_no || "").trim();
       const rawScore = r.score != null && r.score !== "" ? Number(r.score) : null;
       if (!admissionNo) continue;
-      const student = studentsByAdm.get(admissionNo) || studentsById.get(admissionNo);
+      const student = studentsByAdm.get(admissionNo) || studentsById.get(admissionNo) as any;
       if (!student) {
         errors.push({ admissionNo, error: "Student not found" });
         continue;

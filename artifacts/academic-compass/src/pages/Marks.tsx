@@ -233,7 +233,8 @@ export default function Marks() {
       const scoreRaw = parts[1];
       const score = scoreRaw === "" || scoreRaw === "-" ? null : Number(scoreRaw);
       if (!admissionNo || Number.isNaN(score)) continue;
-      rows.push({ admissionNo, score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null });
+      const finalScore = typeof score === "number" && Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null;
+      rows.push({ admissionNo, score: finalScore });
     }
     return rows;
   };
@@ -295,7 +296,8 @@ export default function Marks() {
           const scoreRaw = r["score"] ?? r["Score"] ?? r["marks"] ?? r["Marks"];
           const score = scoreRaw != null && scoreRaw !== "" ? Number(scoreRaw) : null;
           if (!admissionNo || Number.isNaN(score)) return null;
-          return { admissionNo, score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null };
+          const finalScore = typeof score === "number" && Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null;
+          return { admissionNo, score: finalScore };
         })
         .filter((r): r is { admissionNo: string; score: number | null } => r !== null);
       if (rows.length === 0) {
