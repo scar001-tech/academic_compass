@@ -89,6 +89,39 @@ router.post("/", authenticateJWT, requireRoles(...timetableEditRoles), async (re
   }
 });
 
+const batchTimetableSlotSchema = z.object({
+  slots: z.array(timetableSlotSchema).min(1),
+});
+
+router.post("/batch", authenticateJWT, requireRoles(...timetableEditRoles), async (req: any, res) => {
+  try {
+    const parsed = batchTimetableSlotSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const results = await (await getStore()).upsertTimetableSlots(
+      parsed.data.slots.map((s) => ({
+        id: s.id,
+        curriculumId: s.curriculum_id,
+        classId: s.class_id,
+        streamId: s.stream_id ?? null,
+        dayOfWeek: s.day_of_week,
+        period: s.period,
+        startTime: s.start_time ?? null,
+        endTime: s.end_time ?? null,
+        subjectId: s.subject_id ?? null,
+        teacherId: s.teacher_id ?? null,
+        room: s.room ?? null,
+        version: s.version,
+        userId: req.userId,
+        deviceName: s.device_name ?? null,
+      }))
+    );
+    return res.json({ results });
+  } catch (err) {
+    console.error("[timetable-slots BATCH]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.delete("/:id", authenticateJWT, requireRoles(...timetableEditRoles), async (req: any, res) => {
   try {
     await (await getStore()).deleteTimetableSlot(req.params.id);

@@ -66,6 +66,33 @@ export interface SchoolSnapshot {
   principalRemarks: any[];
 }
 
+export async function pushMarkEntries(locals: Array<{
+  id: string;
+  curriculumId: string;
+  sheetId: string;
+  studentId: string;
+  score: number | null;
+  version: number;
+  deviceName: string;
+}>): Promise<Array<{ id: string; status: "ok" | "conflict" | "error" }>> {
+  try {
+    const result = await api.post<{ results: Array<{ id: string; status: "ok" | "conflict" }> }>("/mark-entries/batch", {
+      entries: locals.map(l => ({
+        id: l.id,
+        curriculum_id: l.curriculumId,
+        sheet_id: l.sheetId,
+        student_id: l.studentId,
+        score: l.score,
+        version: l.version,
+        device_name: l.deviceName,
+      })),
+    });
+    return result.results.map(r => ({ ...r, status: r.status as "ok" | "conflict" | "error" }));
+  } catch {
+    return locals.map(l => ({ id: l.id, status: "error" }));
+  }
+}
+
 export async function pushMarkEntry(local: {
   id: string;
   curriculumId: string;
@@ -75,20 +102,8 @@ export async function pushMarkEntry(local: {
   version: number;
   deviceName: string;
 }): Promise<"ok" | "conflict" | "error"> {
-  try {
-    const result = await api.post<{ status: string }>("/mark-entries", {
-      id: local.id,
-      curriculum_id: local.curriculumId,
-      sheet_id: local.sheetId,
-      student_id: local.studentId,
-      score: local.score,
-      version: local.version,
-      device_name: local.deviceName,
-    });
-    return result.status as "ok" | "conflict" | "error";
-  } catch {
-    return "error";
-  }
+  const results = await pushMarkEntries([local]);
+  return results[0]?.status ?? "error";
 }
 
 export async function fetchAllMarkEntries(): Promise<RemoteMarkEntry[]> {
@@ -130,15 +145,37 @@ export async function resolveRemoteConflict(
   }
 }
 
+export async function pushTimetableSlots(locals: Array<RemoteTimetableSlot & { _isNew?: boolean }>): Promise<Array<{ id: string; status: "ok" | "conflict" | "error" | "forbidden" }>> {
+  try {
+    const result = await api.post<{ results: Array<{ id: string; status: "ok" | "conflict" }> }>("/timetable-slots/batch", {
+      slots: locals.map(l => ({
+        id: l.id,
+        curriculum_id: l.curriculum_id,
+        class_id: l.class_id,
+        stream_id: l.stream_id ?? null,
+        day_of_week: l.day_of_week,
+        period: l.period,
+        start_time: l.start_time ?? null,
+        end_time: l.end_time ?? null,
+        subject_id: l.subject_id ?? null,
+        teacher_id: l.teacher_id ?? null,
+        room: l.room ?? null,
+        version: l.version,
+        device_name: l.device_name,
+        updated_at: l.updated_at,
+      })),
+    });
+    return result.results.map(r => ({ ...r, status: r.status as "ok" | "conflict" | "error" | "forbidden" }));
+  } catch {
+    return locals.map(l => ({ id: l.id, status: "error" }));
+  }
+}
+
 export async function pushTimetableSlot(
   local: RemoteTimetableSlot & { _isNew?: boolean }
 ): Promise<"ok" | "conflict" | "error" | "forbidden"> {
-  try {
-    const result = await api.post<{ status: string }>("/timetable-slots", local);
-    return result.status as "ok" | "conflict" | "error" | "forbidden";
-  } catch {
-    return "error";
-  }
+  const results = await pushTimetableSlots([local]);
+  return results[0]?.status ?? "error";
 }
 
 export async function deleteTimetableSlot(id: string) {

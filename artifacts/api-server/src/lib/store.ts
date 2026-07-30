@@ -89,6 +89,16 @@ interface DataStore {
   deleteProfile(userId: string): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
   listMarkEntries(): Promise<MarkEntryRow[]>;
+  upsertMarkEntries(inputs: Array<{
+    id: string;
+    curriculumId: string;
+    sheetId: string;
+    studentId: string;
+    score: number | null;
+    version?: number;
+    userId: string;
+    deviceName?: string | null;
+  }>): Promise<Array<{ id: string; status: "ok" | "conflict" | "error" }>>;
   upsertMarkEntry(input: {
     id: string;
     curriculumId: string;
@@ -100,6 +110,22 @@ interface DataStore {
     deviceName?: string | null;
   }): Promise<"ok" | "conflict">;
   listTimetableSlots(): Promise<TimetableSlotRow[]>;
+  upsertTimetableSlots(inputs: Array<{
+    id: string;
+    curriculumId: string;
+    classId: string;
+    streamId?: string | null;
+    dayOfWeek: number;
+    period: number;
+    startTime?: string | null;
+    endTime?: string | null;
+    subjectId?: string | null;
+    teacherId?: string | null;
+    room?: string | null;
+    version?: number;
+    userId: string;
+    deviceName?: string | null;
+  }>): Promise<Array<{ id: string; status: "ok" | "conflict" | "error" }>>;
   upsertTimetableSlot(input: {
     id: string;
     curriculumId: string;
@@ -332,6 +358,29 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
         .run(input.score, input.userId, input.deviceName ?? null, existing.version + 1, new Date().toISOString(), input.id);
       return "ok";
     },
+    async upsertMarkEntries(inputs) {
+      const results: Array<{ id: string; status: "ok" | "conflict" | "error" }> = [];
+      for (const input of inputs) {
+        const existing = sqliteDb.prepare("SELECT * FROM ac_mark_entries WHERE id = ? LIMIT 1").get(input.id) as any;
+        if (!existing) {
+          sqliteDb.prepare(`INSERT INTO ac_mark_entries (id, curriculum_id, sheet_id, student_id, score, updated_by, device_name, version, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`)
+            .run(input.id, input.curriculumId, input.sheetId, input.studentId, input.score, input.userId, input.deviceName ?? null, new Date().toISOString());
+          results.push({ id: input.id, status: "ok" });
+        } else if (existing.version > (input.version ?? 0)) {
+          sqliteDb.prepare(`INSERT OR IGNORE INTO ac_sync_conflicts
+            (id, entity, entity_id, field, server_value, incoming_value, incoming_by, incoming_device, status, created_at)
+            VALUES (?, 'mark', ?, 'score', ?, ?, ?, ?, 'pending', ?)`)
+            .run(randomUUID(), input.id, String(existing.score ?? ""), String(input.score ?? ""), input.userId, input.deviceName ?? null, new Date().toISOString());
+          results.push({ id: input.id, status: "conflict" });
+        } else {
+          sqliteDb.prepare(`UPDATE ac_mark_entries SET score = ?, updated_by = ?, device_name = ?, version = ?, updated_at = ? WHERE id = ?`)
+            .run(input.score, input.userId, input.deviceName ?? null, existing.version + 1, new Date().toISOString(), input.id);
+          results.push({ id: input.id, status: "ok" });
+        }
+      }
+      return results;
+    },
     async listTimetableSlots() {
       return sqliteDb.prepare("SELECT * FROM ac_timetable_slots").all().map(slotFromRow);
     },
@@ -354,6 +403,30 @@ async function createSqliteStore(rawPath: string): Promise<DataStore> {
       sqliteDb.prepare(`UPDATE ac_timetable_slots SET curriculum_id = ?, class_id = ?, stream_id = ?, day_of_week = ?, period = ?, start_time = ?, end_time = ?, subject_id = ?, teacher_id = ?, room = ?, version = ?, updated_by = ?, device_name = ?, updated_at = ? WHERE id = ?`)
         .run(input.curriculumId, input.classId, input.streamId ?? null, input.dayOfWeek, input.period, input.startTime ?? null, input.endTime ?? null, input.subjectId ?? null, input.teacherId ?? null, input.room ?? null, existing.version + 1, input.userId, input.deviceName ?? null, new Date().toISOString(), input.id);
       return "ok";
+    },
+    async upsertTimetableSlots(inputs) {
+      const results: Array<{ id: string; status: "ok" | "conflict" | "error" }> = [];
+      for (const input of inputs) {
+        const existing = sqliteDb.prepare("SELECT * FROM ac_timetable_slots WHERE id = ? LIMIT 1").get(input.id) as any;
+        if (!existing) {
+          sqliteDb.prepare(`INSERT INTO ac_timetable_slots
+            (id, curriculum_id, class_id, stream_id, day_of_week, period, start_time, end_time, subject_id, teacher_id, room, version, updated_by, device_name, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`)
+            .run(input.id, input.curriculumId, input.classId, input.streamId ?? null, input.dayOfWeek, input.period, input.startTime ?? null, input.endTime ?? null, input.subjectId ?? null, input.teacherId ?? null, input.room ?? null, input.userId, input.deviceName ?? null, new Date().toISOString());
+          results.push({ id: input.id, status: "ok" });
+        } else if (existing.version > (input.version ?? 0)) {
+          sqliteDb.prepare(`INSERT OR IGNORE INTO ac_sync_conflicts
+            (id, entity, entity_id, field, server_value, incoming_value, incoming_by, incoming_device, status, created_at)
+            VALUES (?, 'timetable', ?, 'slot', ?, ?, ?, ?, 'pending', ?)`)
+            .run(randomUUID(), input.id, `${existing.subject_id}@${existing.day_of_week}/${existing.period}`, `${input.subjectId}@${input.dayOfWeek}/${input.period}`, input.userId, input.deviceName ?? null, new Date().toISOString());
+          results.push({ id: input.id, status: "conflict" });
+        } else {
+          sqliteDb.prepare(`UPDATE ac_timetable_slots SET curriculum_id = ?, class_id = ?, stream_id = ?, day_of_week = ?, period = ?, start_time = ?, end_time = ?, subject_id = ?, teacher_id = ?, room = ?, version = ?, updated_by = ?, device_name = ?, updated_at = ? WHERE id = ?`)
+            .run(input.curriculumId, input.classId, input.streamId ?? null, input.dayOfWeek, input.period, input.startTime ?? null, input.endTime ?? null, input.subjectId ?? null, input.teacherId ?? null, input.room ?? null, existing.version + 1, input.userId, input.deviceName ?? null, new Date().toISOString(), input.id);
+          results.push({ id: input.id, status: "ok" });
+        }
+      }
+      return results;
     },
     async deleteTimetableSlot(id) {
       sqliteDb.prepare("DELETE FROM ac_timetable_slots WHERE id = ?").run(id);
@@ -482,6 +555,50 @@ async function createPostgresStore(): Promise<DataStore> {
       }).where(eq(markEntries.id, input.id));
       return "ok";
     },
+    async upsertMarkEntries(inputs) {
+      const results: Array<{ id: string; status: "ok" | "conflict" | "error" }> = [];
+      for (const input of inputs) {
+        const [existing] = await db.select().from(markEntries).where(eq(markEntries.id, input.id)).limit(1);
+        if (!existing) {
+          await db.insert(markEntries).values({
+            id: input.id,
+            curriculumId: input.curriculumId,
+            sheetId: input.sheetId,
+            studentId: input.studentId,
+            score: input.score,
+            updatedBy: input.userId,
+            deviceName: input.deviceName ?? null,
+            version: 1,
+            updatedAt: new Date(),
+          });
+          results.push({ id: input.id, status: "ok" });
+        } else if (existing.version > (input.version ?? 0)) {
+          await db.insert(syncConflicts).values({
+            id: randomUUID(),
+            entity: "mark",
+            entityId: input.id,
+            field: "score",
+            serverValue: String(existing.score ?? ""),
+            incomingValue: String(input.score ?? ""),
+            incomingBy: input.userId,
+            incomingDevice: input.deviceName ?? null,
+            status: "pending",
+            createdAt: new Date(),
+          }).onConflictDoNothing();
+          results.push({ id: input.id, status: "conflict" });
+        } else {
+          await db.update(markEntries).set({
+            score: input.score,
+            updatedBy: input.userId,
+            deviceName: input.deviceName ?? null,
+            version: existing.version + 1,
+            updatedAt: new Date(),
+          }).where(eq(markEntries.id, input.id));
+          results.push({ id: input.id, status: "ok" });
+        }
+      }
+      return results;
+    },
     async listTimetableSlots() {
       return db.select().from(timetableSlots);
     },
@@ -539,6 +656,65 @@ async function createPostgresStore(): Promise<DataStore> {
         updatedAt: new Date(),
       }).where(eq(timetableSlots.id, input.id));
       return "ok";
+    },
+    async upsertTimetableSlots(inputs) {
+      const results: Array<{ id: string; status: "ok" | "conflict" | "error" }> = [];
+      for (const input of inputs) {
+        const [existing] = await db.select().from(timetableSlots).where(eq(timetableSlots.id, input.id)).limit(1);
+        if (!existing) {
+          await db.insert(timetableSlots).values({
+            id: input.id,
+            curriculumId: input.curriculumId,
+            classId: input.classId,
+            streamId: input.streamId ?? null,
+            dayOfWeek: input.dayOfWeek,
+            period: input.period,
+            startTime: input.startTime ?? null,
+            endTime: input.endTime ?? null,
+            subjectId: input.subjectId ?? null,
+            teacherId: input.teacherId ?? null,
+            room: input.room ?? null,
+            version: 1,
+            updatedBy: input.userId,
+            deviceName: input.deviceName ?? null,
+            updatedAt: new Date(),
+          });
+          results.push({ id: input.id, status: "ok" });
+        } else if (existing.version > (input.version ?? 0)) {
+          await db.insert(syncConflicts).values({
+            id: randomUUID(),
+            entity: "timetable",
+            entityId: input.id,
+            field: "slot",
+            serverValue: `${existing.subjectId}@${existing.dayOfWeek}/${existing.period}`,
+            incomingValue: `${input.subjectId}@${input.dayOfWeek}/${input.period}`,
+            incomingBy: input.userId,
+            incomingDevice: input.deviceName ?? null,
+            status: "pending",
+            createdAt: new Date(),
+          }).onConflictDoNothing();
+          results.push({ id: input.id, status: "conflict" });
+        } else {
+          await db.update(timetableSlots).set({
+            curriculumId: input.curriculumId,
+            classId: input.classId,
+            streamId: input.streamId ?? null,
+            dayOfWeek: input.dayOfWeek,
+            period: input.period,
+            startTime: input.startTime ?? null,
+            endTime: input.endTime ?? null,
+            subjectId: input.subjectId ?? null,
+            teacherId: input.teacherId ?? null,
+            room: input.room ?? null,
+            version: existing.version + 1,
+            updatedBy: input.userId,
+            deviceName: input.deviceName ?? null,
+            updatedAt: new Date(),
+          }).where(eq(timetableSlots.id, input.id));
+          results.push({ id: input.id, status: "ok" });
+        }
+      }
+      return results;
     },
     async deleteTimetableSlot(id) {
       await db.delete(timetableSlots).where(eq(timetableSlots.id, id));

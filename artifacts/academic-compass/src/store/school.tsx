@@ -4,9 +4,9 @@ import {
   loadState, saveState, resetState,
 } from "@/lib/schoolData";
 import {
-  pushMarkEntry, fetchAllMarkEntries, fetchAllTimetableSlots,
+  pushMarkEntry, pushMarkEntries, fetchAllMarkEntries, fetchAllTimetableSlots,
   fetchPendingConflicts, resolveRemoteConflict,
-  pushTimetableSlot, deleteTimetableSlot,
+  pushTimetableSlot, pushTimetableSlots, deleteTimetableSlot,
   RemoteTimetableSlot, RemoteMarkEntry, RemoteConflict,
   pushSchoolSnapshot, fetchSchoolSnapshot,
 } from "@/lib/syncService";
@@ -93,8 +93,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
 
       const pending = s.entries.filter(e => e.pending);
       let pushed = 0, conflicted = 0;
-      for (const e of pending) {
-        const res = await pushMarkEntry({
+      if (pending.length > 0) {
+        const results = await pushMarkEntries(pending.map(e => ({
           id: e.id,
           curriculumId: s.sheets.find(sh => sh.id === e.sheetId)?.curriculumId ?? "cbc",
           sheetId: e.sheetId,
@@ -102,14 +102,16 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
           score: e.score,
           version: e.version ?? 1,
           deviceName: s.deviceName,
-        });
-        if (res === "ok") pushed++;
-        else if (res === "conflict") conflicted++;
+        })));
+        for (const r of results) {
+          if (r.status === "ok") pushed++;
+          else if (r.status === "conflict") conflicted++;
+        }
       }
 
       const pendingSlots = (s.timetable ?? []).filter(sl => sl.pending);
-      for (const sl of pendingSlots) {
-        await pushTimetableSlot({
+      if (pendingSlots.length > 0) {
+        await pushTimetableSlots(pendingSlots.map(sl => ({
           id: sl.id,
           curriculum_id: sl.curriculumId,
           class_id: sl.classId,
@@ -125,7 +127,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
           updated_by: null,
           device_name: s.deviceName,
           updated_at: new Date().toISOString(),
-        });
+        })));
       }
 
       const [remoteEntries, remoteSlots, remoteConflicts] = await Promise.all([
@@ -246,7 +248,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     if (!localStorage.getItem("ac_token")) return;
     const onFocus = () => { if (navigator.onLine) syncNow(); };
     window.addEventListener("focus", onFocus);
-    const interval = setInterval(() => { if (navigator.onLine) syncNow(); }, 30000);
+    const interval = setInterval(() => { if (navigator.onLine) syncNow(); }, 10000);
     return () => {
       window.removeEventListener("focus", onFocus);
       clearInterval(interval);

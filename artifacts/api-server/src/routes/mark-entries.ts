@@ -68,4 +68,31 @@ router.post("/", authenticateJWT, requireRoles(...editableMarkRoles), async (req
   }
 });
 
+const batchMarkEntrySchema = z.object({
+  entries: z.array(markEntrySchema).min(1),
+});
+
+router.post("/batch", authenticateJWT, requireRoles(...editableMarkRoles), async (req: any, res) => {
+  try {
+    const parsed = batchMarkEntrySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json(validationError(parsed.error));
+    const results = await (await getStore()).upsertMarkEntries(
+      parsed.data.entries.map((e) => ({
+        id: e.id,
+        curriculumId: e.curriculum_id,
+        sheetId: e.sheet_id,
+        studentId: e.student_id,
+        score: e.score,
+        version: e.version,
+        userId: req.userId,
+        deviceName: e.device_name ?? null,
+      }))
+    );
+    return res.json({ results });
+  } catch (err) {
+    console.error("[mark-entries BATCH]", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default router;
