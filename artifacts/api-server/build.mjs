@@ -101,6 +101,9 @@ async function buildAll() {
       "puppeteer-core",
       "electron",
       "dotenv",
+      "pg",
+      "drizzle-orm/node-postgres",
+      "@workspace/db",
     ],
     sourcemap: "linked",
     plugins: [

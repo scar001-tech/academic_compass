@@ -5,6 +5,7 @@ import syncRouter from "./sync";
 import markEntriesRouter from "./mark-entries";
 import timetableSlotsRouter from "./timetable-slots";
 import conflictsRouter from "./conflicts";
+import importsRouter from "./imports";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use("/sync", syncRouter);
 router.use("/mark-entries", markEntriesRouter);
 router.use("/timetable-slots", timetableSlotsRouter);
 router.use("/conflicts", conflictsRouter);
+router.use("/imports", importsRouter);
 
 export default router;

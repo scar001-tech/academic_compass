@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { gradeFor } from "@/lib/schoolData";
-import { Cloud, CloudOff, Download, Lock } from "lucide-react";
+import { Cloud, CloudOff, Download, Upload, Lock } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import type { MarkEntry } from "@/lib/schoolData";
@@ -39,6 +41,10 @@ export default function Marks() {
   const [streamId, setStreamId] = useState("");
   const [examId, setExamId] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const classes  = state.classes.filter(c => c.curriculumId === activeCurriculum);
   const streams  = state.streams.filter(s => s.classId === classId);
@@ -217,6 +223,95 @@ export default function Marks() {
     toast.success("Marks exported as Excel");
   };
 
+  const parseImportCsv = (raw: string): Array<{ admissionNo: string; score: number | null }> => {
+    const lines = raw.split(/\r?\n/).filter(line => line.trim());
+    const rows: Array<{ admissionNo: string; score: number | null }> = [];
+    for (const line of lines) {
+      const parts = line.split(",").map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) continue;
+      const admissionNo = parts[0];
+      const scoreRaw = parts[1];
+      const score = scoreRaw === "" || scoreRaw === "-" ? null : Number(scoreRaw);
+      if (!admissionNo || Number.isNaN(score)) continue;
+      rows.push({ admissionNo, score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null });
+    }
+    return rows;
+  };
+
+  const handleImportMarks = async () => {
+    if (!examId || !streamId) {
+      toast.error("Select an exam and stream first");
+      return;
+    }
+    const sheet = sheets[0];
+    if (!sheet) {
+      toast.error("No mark sheet found for this exam and stream");
+      return;
+    }
+    setImportBusy(true);
+    try {
+      const rows = parseImportCsv(importText);
+      if (rows.length === 0) {
+        toast.error("No valid rows found. Format: admissionNo, score");
+        return;
+      }
+      const res = await fetch("/api/imports/marks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("ac_token")}`,
+        },
+        body: JSON.stringify({
+          rows,
+          sheetId: sheet.id,
+          curriculumId: sheet.curriculumId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Import failed");
+      toast.success(`Imported ${data.imported} marks`);
+      setImportOpen(false);
+      setImportText("");
+      syncNow();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      toast.error(msg);
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<any>(sheet);
+      const rows = json
+        .map(r => {
+          const admissionNo = String(r["Adm. No."] || r["admissionNo"] || r["admission_no"] || "").trim();
+          const scoreRaw = r["score"] ?? r["Score"] ?? r["marks"] ?? r["Marks"];
+          const score = scoreRaw != null && scoreRaw !== "" ? Number(scoreRaw) : null;
+          if (!admissionNo || Number.isNaN(score)) return null;
+          return { admissionNo, score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : null };
+        })
+        .filter((r): r is { admissionNo: string; score: number | null } => r !== null);
+      if (rows.length === 0) {
+        toast.error("No valid rows found in file");
+        return;
+      }
+      setImportText(rows.map(r => `${r.admissionNo}, ${r.score ?? ""}`).join("\n"));
+      setImportOpen(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to read file";
+      toast.error(msg);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const pendingCount = state.entries.filter(e => e.pending).length;
 
   return (
@@ -235,6 +330,9 @@ export default function Marks() {
             </Button>
             <Button size="sm" variant="outline" onClick={exportMarks} disabled={!examId || !streamId || students.length === 0 || !canEnterMarks}>
               <Download className="h-4 w-4 mr-1" />Export
+            </Button>
+            <Button size="sm" variant="outline" disabled={!examId || !streamId || students.length === 0 || !canEnterMarks} onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1" />Import
             </Button>
           </div>
         }
@@ -326,6 +424,44 @@ export default function Marks() {
           </div>
         </Card>
       )}
+
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" /> Import Marks
+            </DialogTitle>
+            <DialogDescription>
+              Paste CSV data or upload an Excel file. Expected format: <code>admissionNo, score</code> or a table with columns <code>Adm. No.</code> and <code>score</code>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Upload Excel/CSV</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileImport}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="import-text">Or paste CSV</Label>
+              <textarea
+                id="import-text"
+                className="w-full h-40 border rounded-md p-2 text-sm font-mono"
+                placeholder="2244, 78&#10;CBC/101/26, 85&#10;CBC/102/26, 92"
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleImportMarks} disabled={importBusy || !importText.trim()}>
+              {importBusy ? "Importing..." : "Import Marks"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
